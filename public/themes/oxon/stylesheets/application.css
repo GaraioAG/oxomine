@@ -1,4 +1,8 @@
+/* OXON theme, based on A1 theme by Kirill Bezrukov www.redminecrm.com */
+
+
 @import url(../../../stylesheets/application.css);
+@import url(http://fonts.googleapis.com/css?family=Inconsolata|Roboto);
 
 #header {
 	background: url(../images/bg-header.png) repeat-x 0px 0px;
@@ -6,8 +10,8 @@
 }
 
 #header > h1 {
-	background: url(../images/logo.png) no-repeat 10px 20%;
-	padding: 5px 65px;
+	background: url(../images/logo.png) no-repeat 10px 50%;
+	padding: 3px 125px;
 	color: #E0E0E0;
 	text-shadow: 0 -2px rgba(0, 0, 0, 0.2);
 	font-size: 22px;
@@ -19,7 +23,7 @@ only screen and (min-device-pixel-ratio: 2) {
 		/* Reference the @2x Sprite */
 		background-image: url(../images/logo-2x.png);
 		/* Translate the @2x sprite's dimensions back to 1x */
-		background-size: 43px 30px;
+		background-size: 100px 30px;
 	}
 }
 
@@ -104,7 +108,7 @@ div#content > .board.details > h2 ,
 div#content > #add-document > h2 {
 	border-top: 1px solid white;
 	border-bottom: 1px solid #AECCD7;
-	background: #EAF2F5 url(../images/smooth-gradient-blue.jpg);
+	background: #EAF2F5 url(../images/smooth-gradient-red.jpg);
 	text-shadow: 0px 1px white;
 	border-top-left-radius: 8px;
 	border-top-right-radius: 8px;
@@ -905,7 +909,7 @@ a.buy-button.blue {
 .controller-projects.action-index div#content  h2:first-of-type {
 	border-top: 1px solid white;
 	border-bottom: 1px solid #AECCD7;
-	background: #EAF2F5 url(../images/smooth-gradient-blue.jpg);
+	background: #EAF2F5 url(../images/smooth-gradient-red.jpg);
 	text-shadow: 0px 1px white;
 	border-top-left-radius: 8px;
 	border-top-right-radius: 8px;

@@ -11,7 +11,7 @@
 
 #header > h1 {
 	background: url(../images/logo.png) no-repeat 10px 50%;
-	padding: 3px 125px;
+	padding: 10px 125px 3px;
 	color: #E0E0E0;
 	text-shadow: 0 -2px rgba(0, 0, 0, 0.2);
 	font-size: 22px;

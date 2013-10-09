@@ -14,7 +14,7 @@ end
 
 # Optional gem for OpenID authentication
 group :openid do
-  gem "ruby-openid", "~> 2.2.3", :require => "openid"
+  gem "ruby-openid", "~> 2.3.0", :require => "openid"
   gem "ruby-openid-apps-discovery", "~> 1.2.0"
   gem "rack-openid"
 end
@@ -32,7 +32,7 @@ end
 platforms :jruby do
   # jruby-openssl is bundled with JRuby 1.7.0
   gem "jruby-openssl" if Object.const_defined?(:JRUBY_VERSION) && JRUBY_VERSION < '1.7.0'
-  gem "activerecord-jdbc-adapter", "1.2.5"
+  gem "activerecord-jdbc-adapter", "~> 1.2.6"
 end
 
 gem 'pg', '~> 0.15.1'

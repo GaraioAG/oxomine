@@ -2,7 +2,6 @@ source 'https://rubygems.org'
 
 gem "rails", "3.2.13"
 gem "jquery-rails", "~> 2.0.2"
-gem "i18n", "~> 0.6.0"
 gem "coderay", "~> 1.0.9"
 gem "fastercsv", "~> 1.5.0", :platforms => [:mri_18, :mingw_18, :jruby]
 gem "builder", "3.0.0"
@@ -47,6 +46,7 @@ group :test do
   gem "mocha", "~> 0.13.3"
   gem 'capybara', '~> 2.0.0'
   gem 'nokogiri', '< 1.6.0'
+  gem 'selenium-webdriver', '2.35.1'
 end
 
 local_gemfile = File.join(File.dirname(__FILE__), "Gemfile.local")

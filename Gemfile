@@ -1,11 +1,11 @@
 source 'https://rubygems.org'
 
-gem "rails", "3.2.13"
+gem "rails", "3.2.15"
 gem "jquery-rails", "~> 2.0.2"
-gem "i18n", "~> 0.6.0"
 gem "coderay", "~> 1.0.9"
 gem "fastercsv", "~> 1.5.0", :platforms => [:mri_18, :mingw_18, :jruby]
 gem "builder", "3.0.0"
+gem "rdiscount"
 
 # Optional gem for LDAP authentication
 group :ldap do
@@ -35,7 +35,7 @@ platforms :jruby do
   gem "activerecord-jdbc-adapter", "~> 1.2.6"
 end
 
-gem 'pg', '~> 0.15.1'
+gem 'pg', '~> 0.17.0'
 
 group :development do
   gem "rdoc", ">= 2.4.2"

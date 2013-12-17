@@ -1,8 +1,8 @@
 source 'https://rubygems.org'
 
-gem "rails", "3.2.15"
+gem "rails", "3.2.16"
 gem "jquery-rails", "~> 2.0.2"
-gem "coderay", "~> 1.0.9"
+gem "coderay", "~> 1.1.0"
 gem "fastercsv", "~> 1.5.0", :platforms => [:mri_18, :mingw_18, :jruby]
 gem "builder", "3.0.0"
 
@@ -31,7 +31,7 @@ end
 platforms :jruby do
   # jruby-openssl is bundled with JRuby 1.7.0
   gem "jruby-openssl" if Object.const_defined?(:JRUBY_VERSION) && JRUBY_VERSION < '1.7.0'
-  gem "activerecord-jdbc-adapter", "~> 1.2.6"
+  gem "activerecord-jdbc-adapter", "~> 1.3.2"
 end
 
 gem 'pg', '~> 0.17.0'
@@ -43,10 +43,12 @@ end
 
 group :test do
   gem "shoulda", "~> 3.3.2"
-  gem "mocha", "~> 0.13.3"
-  gem 'capybara', '~> 2.0.0'
-  gem 'nokogiri', '< 1.6.0'
-  gem 'selenium-webdriver', '2.35.1'
+  gem "mocha", ">= 0.14", :require => 'mocha/api'
+  if RUBY_VERSION >= '1.9.3'
+    gem "capybara", "~> 2.1.0"
+    gem "selenium-webdriver"
+    gem "database_cleaner"
+  end
 end
 
 local_gemfile = File.join(File.dirname(__FILE__), "Gemfile.local")
@@ -58,5 +60,6 @@ end
 # Load plugins' Gemfiles
 Dir.glob File.expand_path("../plugins/*/Gemfile", __FILE__) do |file|
   puts "Loading #{file} ..." if $DEBUG # `ruby -d` or `bundle -v`
-  instance_eval File.read(file)
+  #TODO: switch to "eval_gemfile file" when bundler >= 1.2.0 will be required (rails 4)
+  instance_eval File.read(file), file
 end

@@ -46,18 +46,15 @@ class TimelogController < ApplicationController
 
     sort_init(@query.sort_criteria.empty? ? [['spent_on', 'desc']] : @query.sort_criteria)
     sort_update(@query.sortable_columns)
-    scope = time_entry_scope(:order => sort_clause)
+    scope = time_entry_scope(:order => sort_clause).
+      includes(:project, :activity, :user, :issue).
+      preload(:issue => [:project, :tracker, :status, :assigned_to, :priority])
 
     respond_to do |format|
       format.html {
-        # Paginate results
         @entry_count = scope.count
         @entry_pages = Paginator.new @entry_count, per_page_option, params['page']
-        @entries = scope.all(
-          :include => [:project, :activity, :user, {:issue => :tracker}],
-          :limit  =>  @entry_pages.per_page,
-          :offset =>  @entry_pages.offset
-        )
+        @entries = scope.offset(@entry_pages.offset).limit(@entry_pages.per_page).all
         @total_hours = scope.sum(:hours).to_f
 
         render :layout => !request.xhr?
@@ -65,24 +62,15 @@ class TimelogController < ApplicationController
       format.api  {
         @entry_count = scope.count
         @offset, @limit = api_offset_and_limit
-        @entries = scope.all(
-          :include => [:project, :activity, :user, {:issue => :tracker}],
-          :limit  => @limit,
-          :offset => @offset
-        )
+        @entries = scope.offset(@offset).limit(@limit).preload(:custom_values => :custom_field).all
       }
       format.atom {
-        entries = scope.reorder("#{TimeEntry.table_name}.created_on DESC").all(
-          :include => [:project, :activity, :user, {:issue => :tracker}],
-          :limit => Setting.feeds_limit.to_i
-        )
+        entries = scope.limit(Setting.feeds_limit.to_i).reorder("#{TimeEntry.table_name}.created_on DESC").all
         render_feed(entries, :title => l(:label_spent_time))
       }
       format.csv {
         # Export all entries
-        @entries = scope.all(
-          :include => [:project, :activity, :user, {:issue => [:tracker, :assigned_to, :priority]}]
-        )
+        @entries = scope.all
         send_data(query_to_csv(@entries, @query, params), :type => 'text/csv; header=present', :filename => 'timelog.csv')
       }
     end
@@ -194,6 +182,7 @@ class TimelogController < ApplicationController
       time_entry.safe_attributes = attributes
       call_hook(:controller_time_entries_bulk_edit_before_save, { :params => params, :time_entry => time_entry })
       unless time_entry.save
+        logger.info "time entry could not be updated: #{time_entry.errors.full_messages}" if logger && logger.info
         # Keep unsaved time_entry ids to display them in flash error
         unsaved_time_entry_ids << time_entry.id
       end

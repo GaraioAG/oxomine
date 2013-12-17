@@ -265,14 +265,25 @@ class Attachment < ActiveRecord::Base
 
   # Moves an existing attachment to its target directory
   def move_to_target_directory!
-    if !new_record? & readable?
-      src = diskfile
-      self.disk_directory = target_directory
-      dest = diskfile
-      if src != dest && FileUtils.mkdir_p(File.dirname(dest)) && FileUtils.mv(src, dest)
-        update_column :disk_directory, disk_directory
-      end
+    return unless !new_record? & readable?
+
+    src = diskfile
+    self.disk_directory = target_directory
+    dest = diskfile
+
+    return if src == dest
+
+    if !FileUtils.mkdir_p(File.dirname(dest))
+      logger.error "Could not create directory #{File.dirname(dest)}" if logger
+      return
     end
+
+    if !FileUtils.mv(src, dest)
+      logger.error "Could not move attachment from #{src} to #{dest}" if logger
+      return
+    end
+
+    update_column :disk_directory, disk_directory
   end
 
   # Moves existing attachments that are stored at the root of the files
@@ -294,10 +305,10 @@ class Attachment < ActiveRecord::Base
 
   def sanitize_filename(value)
     # get only the filename, not the whole path
-    just_filename = value.gsub(/^.*(\\|\/)/, '')
+    just_filename = value.gsub(/\A.*(\\|\/)/m, '')
 
     # Finally, replace invalid characters with underscore
-    @filename = just_filename.gsub(/[\/\?\%\*\:\|\"\'<>]+/, '_')
+    @filename = just_filename.gsub(/[\/\?\%\*\:\|\"\'<>\n\r]+/, '_')
   end
 
   # Returns the subdirectory in which the attachment will be saved

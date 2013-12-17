@@ -51,7 +51,7 @@ class ProjectsControllerTest < ActionController::TestCase
     assert_response :success
     assert_template 'common/feed'
     assert_select 'feed>title', :text => 'Redmine: Latest projects'
-    assert_select 'feed>entry', :count => Project.count(:conditions => Project.visible_condition(User.current))
+    assert_select 'feed>entry', :count => Project.visible(User.current).count
   end
 
   test "#index by non-admin user with view_time_entries permission should show overall spent time link" do
@@ -318,6 +318,16 @@ class ProjectsControllerTest < ActionController::TestCase
     assert_equal Project.find_by_identifier('ecookbook'), assigns(:project)
 
     assert_select 'li', :text => /Development status/
+  end
+
+  def test_show_should_not_display_empty_sidebar
+    p = Project.find(1)
+    p.enabled_module_names = []
+    p.save!
+
+    get :show, :id => 'ecookbook'
+    assert_response :success
+    assert_select '#main.nosidebar'
   end
 
   def test_show_should_not_display_hidden_custom_fields
@@ -588,5 +598,10 @@ class ProjectsControllerTest < ActionController::TestCase
     get :show, :id => 3, :jump => 'foobar'
     assert_response :success
     assert_template 'show'
+  end
+
+  def test_body_should_have_project_css_class
+    get :show, :id => 1
+    assert_select 'body.project-ecookbook'
   end
 end

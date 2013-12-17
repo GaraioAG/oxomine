@@ -153,7 +153,11 @@ namespace :redmine do
       private
         def trac_fullpath
           attachment_type = read_attribute(:type)
-          trac_file = filename.gsub( /[^a-zA-Z0-9\-_\.!~*']/n ) {|x| sprintf('%%%02x', x[0]) }
+          #replace exotic characters with their hex representation to avoid invalid filenames
+          trac_file = filename.gsub( /[^a-zA-Z0-9\-_\.!~*']/n ) do |x|
+            codepoint = RUBY_VERSION < '1.9' ? x[0] : x.codepoints.to_a[0]
+            sprintf('%%%02x', codepoint)
+          end
           "#{TracMigrate.trac_attachments_directory}/#{attachment_type}/#{id}/#{trac_file}"
         end
       end
@@ -259,7 +263,7 @@ namespace :redmine do
           # finally, a default user is used if the new user is not valid
           u = User.first unless u.save
         end
-        # Make sure he is a member of the project
+        # Make sure user is a member of the project
         if project_member && !u.member_of?(@target_project)
           role = DEFAULT_ROLE
           if u.admin

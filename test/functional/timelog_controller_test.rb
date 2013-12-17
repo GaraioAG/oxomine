@@ -429,6 +429,14 @@ class TimelogControllerTest < ActionController::TestCase
     assert_tag 'a', :attributes => {:href => '/time_entries/new'}, :content => /Log time/
   end
 
+  def test_index_my_spent_time
+    @request.session[:user_id] = 2
+    get :index, :user_id => 'me'
+    assert_response :success
+    assert_template 'index'
+    assert assigns(:entries).all? {|entry| entry.user_id == 2}
+  end
+
   def test_index_at_project_level
     get :index, :project_id => 'ecookbook'
     assert_response :success
@@ -560,6 +568,17 @@ class TimelogControllerTest < ActionController::TestCase
     assert_response :success
     assert_include :'issue.cf_2', assigns(:query).column_names
     assert_select 'td.issue_cf_2', :text => 'filter_on_issue_custom_field'
+  end
+
+  def test_index_with_time_entry_custom_field_column
+    field = TimeEntryCustomField.generate!(:field_format => 'string')
+    entry = TimeEntry.generate!(:hours => 2.5, :custom_field_values => {field.id => 'CF Value'})
+    field_name = "cf_#{field.id}"
+
+    get :index, :c => ["hours", field_name]
+    assert_response :success
+    assert_include field_name.to_sym, assigns(:query).column_names
+    assert_select "td.#{field_name}", :text => 'CF Value'
   end
 
   def test_index_with_time_entry_custom_field_sorting

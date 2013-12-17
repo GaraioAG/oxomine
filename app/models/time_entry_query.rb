@@ -84,15 +84,15 @@ class TimeEntryQuery < Query
     add_available_filter "comments", :type => :text
     add_available_filter "hours", :type => :float
 
-    add_custom_fields_filters(TimeEntryCustomField.where(:is_filter => true).all)
+    add_custom_fields_filters(TimeEntryCustomField)
     add_associations_custom_fields_filters :project, :issue, :user
   end
 
   def available_columns
     return @available_columns if @available_columns
     @available_columns = self.class.available_columns.dup
-    @available_columns += TimeEntryCustomField.all.map {|cf| QueryCustomFieldColumn.new(cf) }
-    @available_columns += IssueCustomField.all.map {|cf| QueryAssociationCustomFieldColumn.new(:issue, cf) }
+    @available_columns += TimeEntryCustomField.visible.all.map {|cf| QueryCustomFieldColumn.new(cf) }
+    @available_columns += IssueCustomField.visible.all.map {|cf| QueryAssociationCustomFieldColumn.new(:issue, cf) }
     @available_columns
   end
 

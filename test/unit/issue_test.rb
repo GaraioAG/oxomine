@@ -92,6 +92,27 @@ class IssueTest < ActiveSupport::TestCase
     assert_include 'Due date must be greater than start date', issue.errors.full_messages
   end
 
+  def test_start_date_lesser_than_soonest_start_should_not_validate_on_create
+    issue = Issue.generate(:start_date => '2013-06-04')
+    issue.stubs(:soonest_start).returns(Date.parse('2013-06-10'))
+    assert !issue.valid?
+    assert_include "Start date cannot be earlier than 06/10/2013 because of preceding issues", issue.errors.full_messages
+  end
+
+  def test_start_date_lesser_than_soonest_start_should_not_validate_on_update_if_changed
+    issue = Issue.generate!(:start_date => '2013-06-04')
+    issue.stubs(:soonest_start).returns(Date.parse('2013-06-10'))
+    issue.start_date = '2013-06-07'
+    assert !issue.valid?
+    assert_include "Start date cannot be earlier than 06/10/2013 because of preceding issues", issue.errors.full_messages
+  end
+
+  def test_start_date_lesser_than_soonest_start_should_validate_on_update_if_unchanged
+    issue = Issue.generate!(:start_date => '2013-06-04')
+    issue.stubs(:soonest_start).returns(Date.parse('2013-06-10'))
+    assert issue.valid?
+  end
+
   def test_estimated_hours_should_be_validated
     set_language_if_valid 'en'
     ['-2'].each do |invalid|
@@ -246,7 +267,7 @@ class IssueTest < ActiveSupport::TestCase
 
   def test_visible_scope_for_member
     user = User.find(9)
-    # User should see issues of projects for which he has view_issues permissions only
+    # User should see issues of projects for which user has view_issues permissions only
     Role.non_member.remove_permission!(:view_issues)
     Member.create!(:principal => user, :project_id => 3, :role_ids => [2])
     issues = Issue.visible(user).all
@@ -261,18 +282,18 @@ class IssueTest < ActiveSupport::TestCase
     assert user.groups.any?
     Member.create!(:principal => user.groups.first, :project_id => 1, :role_ids => [2])
     Role.non_member.remove_permission!(:view_issues)
-    
+
     issue = Issue.create(:project_id => 1, :tracker_id => 1, :author_id => 3,
       :status_id => 1, :priority => IssuePriority.all.first,
       :subject => 'Assignment test',
       :assigned_to => user.groups.first,
       :is_private => true)
-    
+
     Role.find(2).update_attribute :issues_visibility, 'default'
     issues = Issue.visible(User.find(8)).all
     assert issues.any?
     assert issues.include?(issue)
-    
+
     Role.find(2).update_attribute :issues_visibility, 'own'
     issues = Issue.visible(User.find(8)).all
     assert issues.any?
@@ -285,7 +306,7 @@ class IssueTest < ActiveSupport::TestCase
     assert user.projects.empty?
     issues = Issue.visible(user).all
     assert issues.any?
-    # Admin should see issues on private projects that he does not belong to
+    # Admin should see issues on private projects that admin does not belong to
     assert issues.detect {|issue| !issue.project.is_public?}
     # Admin should see private issues of other users
     assert issues.detect {|issue| issue.is_private? && issue.author != user}
@@ -542,7 +563,7 @@ class IssueTest < ActiveSupport::TestCase
     admin = User.find(1)
     issue = Issue.find(1)
     assert !admin.member_of?(issue.project)
-    expected_statuses = [issue.status] + 
+    expected_statuses = [issue.status] +
                             WorkflowTransition.find_all_by_old_status_id(
                                 issue.status_id).map(&:new_status).uniq.sort
     assert_equal expected_statuses, issue.new_statuses_allowed_to(admin)
@@ -1082,7 +1103,7 @@ class IssueTest < ActiveSupport::TestCase
 
   def test_should_keep_shared_version_when_changing_project
     Version.find(2).update_attribute :sharing, 'tree'
- 
+
     issue = Issue.find(2)
     assert_equal 2, issue.fixed_version_id
     issue.project_id = 3
@@ -1474,6 +1495,7 @@ class IssueTest < ActiveSupport::TestCase
                           :relation_type => IssueRelation::TYPE_PRECEDES)
     assert_equal Date.parse('2012-10-18'), issue2.reload.start_date
 
+    issue1.reload
     issue1.due_date = '2012-10-23'
     issue1.save!
     issue2.reload
@@ -1488,6 +1510,7 @@ class IssueTest < ActiveSupport::TestCase
                           :relation_type => IssueRelation::TYPE_PRECEDES)
     assert_equal Date.parse('2012-10-18'), issue2.reload.start_date
 
+    issue1.reload
     issue1.start_date = '2012-09-17'
     issue1.due_date = '2012-09-18'
     issue1.save!
@@ -1506,6 +1529,7 @@ class IssueTest < ActiveSupport::TestCase
                           :relation_type => IssueRelation::TYPE_PRECEDES)
     assert_equal Date.parse('2012-10-18'), issue2.reload.start_date
 
+    issue1.reload
     issue1.start_date = '2012-09-17'
     issue1.due_date = '2012-09-18'
     issue1.save!
@@ -1542,7 +1566,7 @@ class IssueTest < ActiveSupport::TestCase
     child = Issue.new(:parent_issue_id => issue2.id, :start_date => '2012-10-16',
       :project_id => 1, :tracker_id => 1, :status_id => 1, :subject => 'Child', :author_id => 1)
     assert !child.valid?
-    assert_include 'Start date is invalid', child.errors.full_messages
+    assert_include 'Start date cannot be earlier than 10/18/2012 because of preceding issues', child.errors.full_messages
     assert_equal Date.parse('2012-10-18'), child.soonest_start
     child.start_date = '2012-10-18'
     assert child.save
@@ -1816,7 +1840,7 @@ class IssueTest < ActiveSupport::TestCase
     IssueRelation.delete_all
 
     project = Project.generate!(:name => "testproject")
-    
+
     parentIssue = Issue.generate!(:project => project)
     childIssue1 = Issue.generate!(:project => project, :parent_issue_id => parentIssue.id)
     childIssue2 = Issue.generate!(:project => project, :parent_issue_id => parentIssue.id)
@@ -1955,7 +1979,7 @@ class IssueTest < ActiveSupport::TestCase
                              :issue_to   => Issue.find(7),
                              :relation_type => IssueRelation::TYPE_PRECEDES)
     IssueRelation.update_all("issue_to_id = 1", ["id = ?", r.id])
-    
+
     assert_equal [2, 3], Issue.find(1).all_dependent_issues.collect(&:id).sort
   end
 
@@ -1975,7 +1999,7 @@ class IssueTest < ActiveSupport::TestCase
                              :issue_to   => Issue.find(7),
                              :relation_type => IssueRelation::TYPE_RELATES)
     IssueRelation.update_all("issue_to_id = 2", ["id = ?", r.id])
-    
+
     r = IssueRelation.create!(:issue_from => Issue.find(3),
                              :issue_to   => Issue.find(7),
                              :relation_type => IssueRelation::TYPE_RELATES)
@@ -2031,42 +2055,42 @@ class IssueTest < ActiveSupport::TestCase
   test "#by_tracker" do
     User.current = User.anonymous
     groups = Issue.by_tracker(Project.find(1))
-    assert_equal 3, groups.size
+    assert_equal 3, groups.count
     assert_equal 7, groups.inject(0) {|sum, group| sum + group['total'].to_i}
   end
 
   test "#by_version" do
     User.current = User.anonymous
     groups = Issue.by_version(Project.find(1))
-    assert_equal 3, groups.size
+    assert_equal 3, groups.count
     assert_equal 3, groups.inject(0) {|sum, group| sum + group['total'].to_i}
   end
 
   test "#by_priority" do
     User.current = User.anonymous
     groups = Issue.by_priority(Project.find(1))
-    assert_equal 4, groups.size
+    assert_equal 4, groups.count
     assert_equal 7, groups.inject(0) {|sum, group| sum + group['total'].to_i}
   end
 
   test "#by_category" do
     User.current = User.anonymous
     groups = Issue.by_category(Project.find(1))
-    assert_equal 2, groups.size
+    assert_equal 2, groups.count
     assert_equal 3, groups.inject(0) {|sum, group| sum + group['total'].to_i}
   end
 
   test "#by_assigned_to" do
     User.current = User.anonymous
     groups = Issue.by_assigned_to(Project.find(1))
-    assert_equal 2, groups.size
+    assert_equal 2, groups.count
     assert_equal 2, groups.inject(0) {|sum, group| sum + group['total'].to_i}
   end
 
   test "#by_author" do
     User.current = User.anonymous
     groups = Issue.by_author(Project.find(1))
-    assert_equal 4, groups.size
+    assert_equal 4, groups.count
     assert_equal 7, groups.inject(0) {|sum, group| sum + group['total'].to_i}
   end
 
@@ -2074,7 +2098,7 @@ class IssueTest < ActiveSupport::TestCase
     User.current = User.anonymous
     groups = Issue.by_subproject(Project.find(1))
     # Private descendant not visible
-    assert_equal 1, groups.size
+    assert_equal 1, groups.count
     assert_equal 2, groups.inject(0) {|sum, group| sum + group['total'].to_i}
   end
 
@@ -2163,6 +2187,18 @@ class IssueTest < ActiveSupport::TestCase
     classes = issue.css_classes.split(' ')
     assert_include 'priority-8', classes
     assert_include 'priority-highest', classes
+  end
+
+  def test_css_classes_should_include_user_assignment
+    issue = Issue.generate(:assigned_to_id => 2)
+    assert_include 'assigned-to-me', issue.css_classes(User.find(2))
+    assert_not_include 'assigned-to-me', issue.css_classes(User.find(3))
+  end
+
+  def test_css_classes_should_include_user_group_assignment
+    issue = Issue.generate(:assigned_to_id => 10)
+    assert_include 'assigned-to-my-group', issue.css_classes(Group.find(10).users.first)
+    assert_not_include 'assigned-to-my-group', issue.css_classes(User.find(3))
   end
 
   def test_save_attachments_with_hash_should_save_attachments_in_keys_order

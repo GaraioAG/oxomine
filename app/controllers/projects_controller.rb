@@ -82,7 +82,7 @@ class ProjectsController < ApplicationController
 
     if validate_parent_id && @project.save
       @project.set_allowed_parent!(params[:project]['parent_id']) if params[:project].has_key?('parent_id')
-      # Add current user as a project member if he is not admin
+      # Add current user as a project member if current user is not admin
       unless User.current.admin?
         r = Role.givable.find_by_id(Setting.new_project_user_role_id.to_i) || Role.givable.first
         m = Member.new(:user => User.current, :roles => [r])
@@ -155,7 +155,7 @@ class ProjectsController < ApplicationController
     @total_issues_by_tracker = Issue.visible.where(cond).count(:group => :tracker)
 
     if User.current.allowed_to?(:view_time_entries, @project)
-      @total_hours = TimeEntry.visible.sum(:hours, :include => :project, :conditions => cond).to_f
+      @total_hours = TimeEntry.visible.where(cond).sum(:hours).to_f
     end
 
     @key = User.current.rss_key

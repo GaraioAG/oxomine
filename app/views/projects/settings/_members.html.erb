@@ -5,12 +5,14 @@
 <div class="splitcontentleft">
 <% if members.any? %>
 <table class="list members">
-  <thead><tr>
-    <th><%= l(:label_user) %> / <%= l(:label_group) %></th>
-    <th><%= l(:label_role_plural) %></th>
-    <th style="width:15%"></th>
-          <%= call_hook(:view_projects_settings_members_table_header, :project => @project) %>
-  </tr></thead>
+  <thead>
+    <tr>
+      <th><%= l(:label_user) %> / <%= l(:label_group) %></th>
+      <th><%= l(:label_role_plural) %></th>
+      <th style="width:15%"></th>
+      <%= call_hook(:view_projects_settings_members_table_header, :project => @project) %>
+    </tr>
+  </thead>
   <tbody>
   <% members.each do |member| %>
   <% next if member.new_record? %>
@@ -29,6 +31,7 @@
           <label>
             <%= check_box_tag('membership[role_ids][]',
                               role.id, member.roles.include?(role),
+                              :id => nil,
                               :disabled => member.member_roles.detect {
                                  |mr| mr.role_id == role.id && !mr.inherited_from.nil?
                                  } ) %> <%= role %>
@@ -79,7 +82,7 @@
       <p>
         <%= l(:label_role_plural) %>:
         <% roles.each do |role| %>
-          <label><%= check_box_tag 'membership[role_ids][]', role.id %> <%= role %></label>
+          <label><%= check_box_tag 'membership[role_ids][]', role.id, false, :id => nil %> <%= role %></label>
         <% end %>
       </p>
       <p><%= submit_tag l(:button_add), :id => 'member-add-submit' %></p>

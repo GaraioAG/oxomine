@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2013  Jean-Philippe Lang
+# Copyright (C) 2006-2014  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -94,7 +94,7 @@ class RepositoriesController < ApplicationController
     @committers = @repository.committers
     @users = @project.users
     additional_user_ids = @committers.collect(&:last).collect(&:to_i) - @users.collect(&:id)
-    @users += User.find_all_by_id(additional_user_ids) unless additional_user_ids.empty?
+    @users += User.where(:id => additional_user_ids).all unless additional_user_ids.empty?
     @users.compact!
     @users.sort!
     if request.post? && params[:committers].is_a?(Hash)

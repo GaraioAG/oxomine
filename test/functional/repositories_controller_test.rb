@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2013  Jean-Philippe Lang
+# Copyright (C) 2006-2014  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -60,7 +60,7 @@ class RepositoriesControllerTest < ActionController::TestCase
            :repository => {:url => 'file:///test', :is_default => '1', :identifier => ''}
     end
     assert_response 302
-    repository = Repository.first(:order => 'id DESC')
+    repository = Repository.order('id DESC').first
     assert_kind_of Repository::Subversion, repository
     assert_equal 'file:///test', repository.url
   end

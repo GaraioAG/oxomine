@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2013  Jean-Philippe Lang
+# Copyright (C) 2006-2014  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -209,8 +209,7 @@ class QueryTest < ActiveSupport::TestCase
   end
 
   def test_operator_is_on_float
-    Issue.update_all("estimated_hours = 171.2", "id=2")
-
+    Issue.where(:id => 2).update_all("estimated_hours = 171.2")
     query = IssueQuery.new(:name => '_')
     query.add_filter('estimated_hours', '=', ['171.20'])
     issues = find_issues_with_query(query)
@@ -449,10 +448,24 @@ class QueryTest < ActiveSupport::TestCase
     find_issues_with_query(query)
   end
 
+  def test_operator_date_lesser_than_with_timestamp
+    query = IssueQuery.new(:name => '_')
+    query.add_filter('updated_on', '<=', ['2011-07-10T19:13:52'])
+    assert_match /issues\.updated_on <= '2011-07-10 19:13:52/, query.statement
+    find_issues_with_query(query)
+  end
+
   def test_operator_date_greater_than
     query = IssueQuery.new(:name => '_')
     query.add_filter('due_date', '>=', ['2011-07-10'])
     assert_match /issues\.due_date > '2011-07-09 23:59:59(\.9+)?'/, query.statement
+    find_issues_with_query(query)
+  end
+
+  def test_operator_date_greater_than_with_timestamp
+    query = IssueQuery.new(:name => '_')
+    query.add_filter('updated_on', '>=', ['2011-07-10T19:13:52'])
+    assert_match /issues\.updated_on > '2011-07-10 19:13:51(\.0+)?'/, query.statement
     find_issues_with_query(query)
   end
 

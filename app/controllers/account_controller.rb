@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2013  Jean-Philippe Lang
+# Copyright (C) 2006-2014  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -34,7 +34,7 @@ class AccountController < ApplicationController
   def login
     if request.get?
       if User.current.logged?
-        redirect_to home_url
+        redirect_back_or_default home_url, :referer => true
       end
     else
       authenticate_user

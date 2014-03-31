@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2013  Jean-Philippe Lang
+# Copyright (C) 2006-2014  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -55,7 +55,7 @@ class MailerTest < ActiveSupport::TestCase
       # link to a referenced ticket
       assert_select 'a[href=?][title=?]',
                     'https://mydomain.foo/issues/1',
-                    'Can&#x27;t print recipes (New)',
+                    "#{ESCAPED_UCANT} print recipes (New)",
                     :text => '#1'
       # link to a changeset
       assert_select 'a[href=?][title=?]',
@@ -94,7 +94,7 @@ class MailerTest < ActiveSupport::TestCase
       # link to a referenced ticket
       assert_select 'a[href=?][title=?]',
                     'http://mydomain.foo/rdm/issues/1',
-                    'Can&#x27;t print recipes (New)',
+                    "#{ESCAPED_UCANT} print recipes (New)",
                     :text => '#1'
       # link to a changeset
       assert_select 'a[href=?][title=?]',
@@ -144,7 +144,7 @@ class MailerTest < ActiveSupport::TestCase
       # link to a referenced ticket
       assert_select 'a[href=?][title=?]',
                     'http://mydomain.foo/rdm/issues/1',
-                    'Can&#x27;t print recipes (New)',
+                    "#{ESCAPED_UCANT} print recipes (New)",
                     :text => '#1'
       # link to a changeset
       assert_select 'a[href=?][title=?]',
@@ -465,6 +465,17 @@ class MailerTest < ActiveSupport::TestCase
       Setting.default_language = lang.to_s
       assert Mailer.news_added(news).deliver
     end
+  end
+
+  def test_news_added_should_notify_project_news_watchers
+    user1 = User.generate!
+    user2 = User.generate!
+    news = News.find(1)
+    news.project.enabled_module('news').add_watcher(user1)
+
+    Mailer.news_added(news).deliver
+    assert_include user1.mail, last_email.bcc
+    assert_not_include user2.mail, last_email.bcc
   end
 
   def test_news_comment_added

@@ -125,7 +125,7 @@ table.list { border: 1px solid #e4e4e4;  border-collapse: collapse; width: 100%;
 table.list th {  background-color:#EEEEEE; padding: 4px; white-space:nowrap; }
 table.list td {text-align:center; vertical-align:top; padding-right:10px;}
 table.list td.id { width: 2%; text-align: center;}
-table.list td.name, table.list td.description, table.list td.subject, table.list td.comments {text-align: left;}
+table.list td.name, table.list td.description, table.list td.subject, table.list td.comments, table.list td.roles {text-align: left;}
 table.list td.tick {width:15%}
 table.list td.checkbox { width: 15px; padding: 2px 0 0 0; }
 table.list td.checkbox input {padding:0px;}
@@ -263,6 +263,7 @@ table.query-columns td.buttons {
   vertical-align: middle;
   text-align: center;
 }
+table.query-columns td.buttons input[type=button] {width:35px;}
 
 td.center {text-align:center;}
 
@@ -457,8 +458,8 @@ table.fields_permissions select {font-size:90%}
 table.fields_permissions td.readonly {background:#ddd;}
 table.fields_permissions td.required {background:#d88;}
 
-textarea#custom_field_possible_values {width: 99%}
-textarea#custom_field_default_value {width: 99%}
+textarea#custom_field_possible_values {width: 95%; resize:vertical}
+textarea#custom_field_default_value {width: 95%; resize:vertical}
 
 input#content_comments {width: 99%}
 
@@ -474,6 +475,10 @@ p.pagination {margin-top:8px; font-size: 90%}
 }
 
 html>body .tabular p {overflow:hidden;}
+
+.tabular input, .tabular select {max-width:95%}
+.tabular textarea {width:95%; resize:vertical;}
+.tabular span[title] {border-bottom:1px dotted #aaa;}
 
 .tabular label{
   font-weight: bold;
@@ -498,7 +503,7 @@ html>body .tabular p {overflow:hidden;}
   text-align: left;
   float: none;
   display: block;
-  width: auto;
+  width: auto !important;
 }
 
 .tabular label.inline{
@@ -532,6 +537,27 @@ fieldset#notified_events .parent { padding-left: 20px; }
 span.required {color: #bb0000;}
 .summary {font-style: italic;}
 
+.check_box_group {
+  display:block;
+  width:95%;
+  max-height:300px;
+  overflow-y:auto;
+  padding:2px 4px 4px 2px;
+  background:#fff;
+  border:1px solid #9EB1C2;
+  border-radius:2px
+}
+.check_box_group label {
+  font-weight: normal;
+  margin-left: 0px !important;
+  text-align: left;
+  float: none;
+  display: block;
+  width: auto;
+}
+.check_box_group.bool_cf {border:0; background:inherit;}
+.check_box_group.bool_cf label {display: inline;}
+
 #attachments_fields input.description {margin-left:4px; width:340px;}
 #attachments_fields span {display:block; white-space:nowrap;}
 #attachments_fields input.filename {border:0; height:1.8em; width:250px; color:#555; background-color:inherit; background:url(../images/attachment.png) no-repeat 1px 50%; padding-left:18px;}
@@ -560,7 +586,9 @@ a.atom { background: url(../images/feed.png) no-repeat 1px 50%; padding: 2px 0px
 em.info {font-style:normal;font-size:90%;color:#888;display:block;}
 em.info.error {padding-left:20px; background:url(../images/exclamation.png) no-repeat 0 50%;}
 
-textarea.text_cf {width:90%;}
+textarea.text_cf {width:95%; resize:vertical;}
+input.string_cf, input.link_cf {width:95%;}
+select.bool_cf {width:auto !important;}
 
 #tab-content-modules fieldset p {margin:3px 0 4px 0;}
 
@@ -858,7 +886,7 @@ a.wiki-anchor { display: none; margin-left: 6px; text-decoration: none; }
 a.wiki-anchor:hover { color: #aaa !important; text-decoration: none; }
 h1:hover a.wiki-anchor, h2:hover a.wiki-anchor, h3:hover a.wiki-anchor { display: inline; color: #ddd; }
 
-div.wiki img { vertical-align: middle; }
+div.wiki img {vertical-align:middle; max-width:100%;}
 
 /***** My page layout *****/
 .block-receiver {

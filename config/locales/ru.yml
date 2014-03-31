@@ -1210,3 +1210,11 @@ ru:
   notice_new_password_must_be_different: Новый пароль должен отличаться от текущего
   setting_mail_handler_excluded_filenames: Исключать вложения по имени
   text_convert_available: Доступно использование ImageMagick (необязательно)
+  label_link: Ссылка
+  label_only: только
+  label_drop_down_list: выпадаюший список
+  label_checkboxes: чекбоксы
+  label_link_values_to: Значения ссылки для URL
+  setting_force_default_language_for_anonymous: Не определять язык для анонимных пользователей
+  setting_force_default_language_for_loggedin: Не определять язык для зарегистрированных пользователей
+  label_custom_field_select_type: Выберите тип объекта для которого будет создано настраиваемое поле

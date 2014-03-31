@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2013  Jean-Philippe Lang
+# Copyright (C) 2006-2014  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -18,8 +18,10 @@
 require File.expand_path('../../test_helper', __FILE__)
 
 class ProjectsControllerTest < ActionController::TestCase
-  fixtures :projects, :versions, :users, :roles, :members, :member_roles, :issues, :journals, :journal_details,
-           :trackers, :projects_trackers, :issue_statuses, :enabled_modules, :enumerations, :boards, :messages,
+  fixtures :projects, :versions, :users, :roles, :members,
+           :member_roles, :issues, :journals, :journal_details,
+           :trackers, :projects_trackers, :issue_statuses,
+           :enabled_modules, :enumerations, :boards, :messages,
            :attachments, :custom_fields, :custom_values, :time_entries
 
   def setup
@@ -420,7 +422,7 @@ class ProjectsControllerTest < ActionController::TestCase
     post :update, :id => 1, :project => {:name => ''}
     assert_response :success
     assert_template 'settings'
-    assert_error_tag :content => /name can&#x27;t be blank/i
+    assert_error_tag :content => /name #{ESCAPED_CANT} be blank/i
   end
 
   def test_update_should_be_denied_for_member_on_closed_project

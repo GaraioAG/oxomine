@@ -16,6 +16,9 @@ RedmineApp::Application.configure do
   # config.logger = Logger.new(config.log_path, 7, 1048576)
   # config.logger.level = Logger::INFO
 
+  # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
+  config.force_ssl = true
+
   # Full error reports are disabled and caching is turned on
   config.action_controller.perform_caching = true
 

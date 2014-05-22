@@ -44,6 +44,7 @@ class ApplicationController < ActionController::Base
     unless api_request?
       super
       cookies.delete(autologin_cookie_name)
+      self.logged_user = nil
       render_error :status => 422, :message => "Invalid form authenticity token."
     end
   end
@@ -379,7 +380,7 @@ class ApplicationController < ActionController::Base
       begin
         uri = URI.parse(back_url)
         # do not redirect user to another host or to the login or register page
-        if ((uri.relative? && back_url.match(%r{\A/\w})) || (uri.host == request.host)) && !uri.path.match(%r{/(login|account/register)})
+        if ((uri.relative? && back_url.match(%r{\A/(\w.*)?\z})) || (uri.host == request.host)) && !uri.path.match(%r{/(login|account/register)})
           redirect_to(back_url)
           return
         end
@@ -557,7 +558,7 @@ class ApplicationController < ActionController::Base
 
   # Returns a string that can be used as filename value in Content-Disposition header
   def filename_for_content_disposition(name)
-    request.env['HTTP_USER_AGENT'] =~ %r{MSIE} ? ERB::Util.url_encode(name) : name
+    request.env['HTTP_USER_AGENT'] =~ %r{(MSIE|Trident)} ? ERB::Util.url_encode(name) : name
   end
 
   def api_request?

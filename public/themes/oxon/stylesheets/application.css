@@ -1,7 +1,7 @@
 /* OXON theme, based on A1 theme (v1.1.2) by Kirill Bezrukov www.redminecrm.com */
 
 @import url(../../../stylesheets/application.css);
-@import url(http://fonts.googleapis.com/css?family=Inconsolata|Roboto);
+@import url(//fonts.googleapis.com/css?family=Inconsolata|Roboto);
 
 #header {
 	background: url(../images/bg-header.png) repeat-x 0px 0px;

@@ -99,8 +99,10 @@ function uploadBlob(blob, uploadUrl, attachmentId, options) {
   return $.ajax(uploadUrl, {
     type: 'POST',
     contentType: 'application/octet-stream',
-    beforeSend: function(jqXhr) {
+    beforeSend: function(jqXhr, settings) {
       jqXhr.setRequestHeader('Accept', 'application/js');
+      // attach proper File object 
+      settings.data = blob;
     },
     xhr: function() {
       var xhr = $.ajaxSettings.xhr();
@@ -131,7 +133,7 @@ function addInputFiles(inputEl) {
     }
   }
 
-  clearedFileInput.insertAfter('#attachments_fields');
+  clearedFileInput.insertAfter('#attachments_fields').on('change', function(){addInputFiles(this);});
 }
 
 function uploadAndAttachFiles(files, inputEl) {

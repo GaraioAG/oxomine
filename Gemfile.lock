@@ -96,8 +96,6 @@ GEM
     request_store (1.0.5)
     rmagick (2.13.4)
     ruby-openid (2.3.0)
-    ruby-openid-apps-discovery (1.2.0)
-      ruby-openid (>= 2.1.7)
     rubyzip (1.1.6)
     selenium-webdriver (2.44.0)
       childprocess (~> 0.5)
@@ -301,7 +299,6 @@ DEPENDENCIES
   request_store (= 1.0.5)
   rmagick (>= 2.0.0)
   ruby-openid (~> 2.3.0)
-  ruby-openid-apps-discovery (~> 1.2.0)
   selenium-webdriver
   shoulda (~> 3.3.2)
   shoulda-matchers (= 1.4.1)

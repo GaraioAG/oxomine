@@ -20,6 +20,10 @@ group :openid do
   gem "rack-openid"
 end
 
+# Gems for redmine_omniauth_google plugin
+gem 'oauth2'
+gem 'json'
+
 platforms :mri, :mingw do
   # Optional gem for exporting the gantt to a PNG file, not supported with jruby
   group :rmagick do

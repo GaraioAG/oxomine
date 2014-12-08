@@ -219,6 +219,16 @@ class IssueTest < ActiveSupport::TestCase
     assert_visibility_match User.anonymous, issues
   end
 
+  def test_visible_scope_for_anonymous_without_view_issues_permissions_and_membership
+    Role.anonymous.remove_permission!(:view_issues)
+    Member.create!(:project_id => 1, :principal => Group.anonymous, :role_ids => [2])
+
+    issues = Issue.visible(User.anonymous).all
+    assert issues.any?
+    assert_equal [1], issues.map(&:project_id).uniq.sort
+    assert_visibility_match User.anonymous, issues
+  end
+
   def test_anonymous_should_not_see_private_issues_with_issues_visibility_set_to_default
     assert Role.anonymous.update_attribute(:issues_visibility, 'default')
     issue = Issue.generate!(:author => User.anonymous, :assigned_to => User.anonymous, :is_private => true)
@@ -262,6 +272,17 @@ class IssueTest < ActiveSupport::TestCase
     assert user.projects.empty?
     issues = Issue.visible(user).all
     assert issues.empty?
+    assert_visibility_match user, issues
+  end
+
+  def test_visible_scope_for_non_member_without_view_issues_permissions_and_membership
+    Role.non_member.remove_permission!(:view_issues)
+    Member.create!(:project_id => 1, :principal => Group.non_member, :role_ids => [2])
+    user = User.find(9)
+
+    issues = Issue.visible(user).all
+    assert issues.any?
+    assert_equal [1], issues.map(&:project_id).uniq.sort
     assert_visibility_match user, issues
   end
 
@@ -806,6 +827,26 @@ class IssueTest < ActiveSupport::TestCase
 
     issue.start_date = Date.today
     issue.custom_field_values = {cf.id.to_s => 'bar'}
+    assert issue.save
+  end
+
+  def test_required_attribute_that_is_disabled_for_the_tracker_should_not_be_required
+    WorkflowPermission.delete_all
+    WorkflowPermission.create!(:old_status_id => 1, :tracker_id => 1,
+                               :role_id => 1, :field_name => 'start_date',
+                               :rule => 'required')
+    user = User.find(2)
+
+    issue = Issue.new(:project_id => 1, :tracker_id => 1, :status_id => 1,
+                      :subject => 'Required fields', :author => user)
+    assert !issue.save
+    assert_include "Start date can't be blank", issue.errors.full_messages
+
+    tracker = Tracker.find(1)
+    tracker.core_fields -= %w(start_date)
+    tracker.save!
+    issue = Issue.new(:project_id => 1, :tracker_id => 1, :status_id => 1,
+                      :subject => 'Required fields', :author => user)
     assert issue.save
   end
 
@@ -1721,6 +1762,16 @@ class IssueTest < ActiveSupport::TestCase
     with_settings :issue_group_assignment => '0' do
       assert_equal %w(User), issue.assignable_users.map {|a| a.class.name}.uniq.sort
       assert !issue.assignable_users.include?(Group.find(11))
+    end
+  end
+
+  def test_assignable_users_should_not_include_builtin_groups
+    Member.create!(:project_id => 1, :principal => Group.non_member, :role_ids => [1])
+    Member.create!(:project_id => 1, :principal => Group.anonymous, :role_ids => [1])
+    issue = Issue.new(:project => Project.find(1))
+
+    with_settings :issue_group_assignment => '1' do
+      assert_nil issue.assignable_users.detect {|u| u.is_a?(GroupBuiltin)}
     end
   end
 

@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -69,6 +69,9 @@ module Redmine
       # Name of the partial for editing the custom field
       class_attribute :form_partial
       self.form_partial = nil
+
+      class_attribute :change_as_diff
+      self.change_as_diff = false
 
       def self.add(name)
         self.format_name = name
@@ -293,13 +296,18 @@ module Redmine
       add 'text'
       self.searchable_supported = true
       self.form_partial = 'custom_fields/formats/text'
+      self.change_as_diff = true
 
       def formatted_value(view, custom_field, value, customized=nil, html=false)
         if html
-          if custom_field.text_formatting == 'full'
-            view.textilizable(value, :object => customized)
+          if value.present?
+            if custom_field.text_formatting == 'full'
+              view.textilizable(value, :object => customized)
+            else
+              view.simple_format(html_escape(value))
+            end
           else
-            view.simple_format(html_escape(value))
+            ''
           end
         else
           value.to_s
@@ -368,7 +376,7 @@ module Redmine
 
       def validate_single_value(custom_field, value, customized=nil)
         errs = super
-        errs << ::I18n.t('activerecord.errors.messages.not_a_number') unless value =~ /^[+-]?\d+$/
+        errs << ::I18n.t('activerecord.errors.messages.not_a_number') unless value.to_s =~ /^[+-]?\d+$/
         errs
       end
 
@@ -588,7 +596,7 @@ module Redmine
     end
 
     class RecordList < List
-      self.customized_class_names = %w(Issue TimeEntry Version Project)
+      self.customized_class_names = %w(Issue TimeEntry Version Document Project)
 
       def cast_single_value(custom_field, value, customized=nil)
         target_class.find_by_id(value.to_i) if value.present?
@@ -607,8 +615,7 @@ module Redmine
         missing = [custom_value.value_was].flatten.reject(&:blank?) - options.map(&:last)
         if missing.any?
           options += target_class.where(:id => missing.map(&:to_i)).map {|o| [o.to_s, o.id.to_s]}
-          #TODO: use #sort_by! when ruby1.8 support is dropped
-          options = options.sort_by(&:first)
+          options.sort_by!(&:first)
         end
         options
       end

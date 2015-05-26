@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -37,8 +37,9 @@ class QueriesController < ApplicationController
                     order("#{Query.table_name}.name").
                     limit(@limit).
                     offset(@offset).
-                    all
+                    to_a
     respond_to do |format|
+      format.html {render_error :status => 406}
       format.api
     end
   end

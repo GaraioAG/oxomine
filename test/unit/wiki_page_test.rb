@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -99,6 +99,26 @@ class WikiPageTest < ActiveSupport::TestCase
                    page.errors[:parent_title]
     page.parent_title = 'Another_page'
     assert page.save
+  end
+
+  def test_move_child_should_clear_parent
+    parent = WikiPage.create!(:wiki_id => 1, :title => 'Parent')
+    child = WikiPage.create!(:wiki_id => 1, :title => 'Child', :parent => parent)
+
+    child.wiki_id = 2
+    child.save!
+    assert_equal nil, child.reload.parent_id
+  end
+
+  def test_move_parent_should_move_child_page
+    parent = WikiPage.create!(:wiki_id => 1, :title => 'Parent')
+    child = WikiPage.create!(:wiki_id => 1, :title => 'Child', :parent => parent)
+    parent.reload
+
+    parent.wiki_id = 2
+    parent.save!
+    assert_equal 2, child.reload.wiki_id
+    assert_equal parent, child.parent
   end
 
   def test_destroy

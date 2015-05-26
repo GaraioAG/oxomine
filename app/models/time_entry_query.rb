@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -40,20 +40,20 @@ class TimeEntryQuery < Query
 
     principals = []
     if project
-      principals += project.principals.sort
+      principals += project.principals.visible.sort
       unless project.leaf?
-        subprojects = project.descendants.visible.all
+        subprojects = project.descendants.visible.to_a
         if subprojects.any?
           add_available_filter "subproject_id",
             :type => :list_subprojects,
             :values => subprojects.collect{|s| [s.name, s.id.to_s] }
-          principals += Principal.member_of(subprojects)
+          principals += Principal.member_of(subprojects).visible
         end
       end
     else
       if all_projects.any?
         # members of visible projects
-        principals += Principal.member_of(all_projects)
+        principals += Principal.member_of(all_projects).visible
         # project filter
         project_values = []
         if User.current.logged? && User.current.memberships.any?
@@ -109,7 +109,8 @@ class TimeEntryQuery < Query
       where(statement).
       order(order_option).
       joins(joins_for_order_statement(order_option.join(','))).
-      includes(:activity)
+      includes(:activity).
+      references(:activity)
   end
 
   def sql_for_activity_id_field(field, operator, value)

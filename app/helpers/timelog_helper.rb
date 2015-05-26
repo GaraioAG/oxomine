@@ -1,7 +1,7 @@
 # encoding: utf-8
 #
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -71,21 +71,6 @@ module TimelogHelper
     sum
   end
 
-  def options_for_period_select(value)
-    options_for_select([[l(:label_all_time), 'all'],
-                        [l(:label_today), 'today'],
-                        [l(:label_yesterday), 'yesterday'],
-                        [l(:label_this_week), 'current_week'],
-                        [l(:label_last_week), 'last_week'],
-                        [l(:label_last_n_weeks, 2), 'last_2_weeks'],
-                        [l(:label_last_n_days, 7), '7_days'],
-                        [l(:label_this_month), 'current_month'],
-                        [l(:label_last_month), 'last_month'],
-                        [l(:label_last_n_days, 30), '30_days'],
-                        [l(:label_this_year), 'current_year']],
-                        value)
-  end
-
   def format_criteria_value(criteria_options, value)
     if value.blank?
       "[#{l(:label_none)}]"
@@ -105,7 +90,7 @@ module TimelogHelper
 
   def report_to_csv(report)
     decimal_separator = l(:general_csv_decimal_separator)
-    export = FCSV.generate(:col_sep => l(:general_csv_separator)) do |csv|
+    export = CSV.generate(:col_sep => l(:general_csv_separator)) do |csv|
       # Column headers
       headers = report.criteria.collect {|criteria| l(report.available_criteria[criteria][:label]) }
       headers += report.periods

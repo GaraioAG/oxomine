@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -45,6 +45,7 @@ class ApplicationController < ActionController::Base
       super
       cookies.delete(autologin_cookie_name)
       self.logged_user = nil
+      set_localization
       render_error :status => 422, :message => "Invalid form authenticity token."
     end
   end
@@ -62,9 +63,9 @@ class ApplicationController < ActionController::Base
     if session[:user_id]
       if session_expired? && !try_to_autologin
         set_localization(User.active.find_by_id(session[:user_id]))
-        reset_session
+        self.logged_user = nil
         flash[:error] = l(:error_session_expired)
-        redirect_to signin_url
+        require_login
       else
         session[:atime] = Time.now.utc.to_i
       end
@@ -242,10 +243,13 @@ class ApplicationController < ActionController::Base
             redirect_to :controller => "account", :action => "login", :back_url => url
           end
         }
-        format.atom { redirect_to :controller => "account", :action => "login", :back_url => url }
+        format.any(:atom, :pdf, :csv) {
+          redirect_to :controller => "account", :action => "login", :back_url => url
+        }
         format.xml  { head :unauthorized, 'WWW-Authenticate' => 'Basic realm="Redmine API"' }
         format.js   { head :unauthorized, 'WWW-Authenticate' => 'Basic realm="Redmine API"' }
         format.json { head :unauthorized, 'WWW-Authenticate' => 'Basic realm="Redmine API"' }
+        format.any  { head :unauthorized }
       end
       return false
     end
@@ -496,7 +500,7 @@ class ApplicationController < ActionController::Base
   end
 
   def render_feed(items, options={})
-    @items = items || []
+    @items = (items || []).to_a
     @items.sort! {|x,y| y.event_datetime <=> x.event_datetime }
     @items = @items.slice(0, Setting.feeds_limit.to_i)
     @title = options[:title] || Setting.app_title
@@ -636,12 +640,14 @@ class ApplicationController < ActionController::Base
   end
 
   # Renders API response on validation failure
+  # for an object or an array of objects
   def render_validation_errors(objects)
-    if objects.is_a?(Array)
-      @error_messages = objects.map {|object| object.errors.full_messages}.flatten
-    else
-      @error_messages = objects.errors.full_messages
-    end
+    messages = Array.wrap(objects).map {|object| object.errors.full_messages}.flatten
+    render_api_errors(messages)
+  end
+
+  def render_api_errors(*messages)
+    @error_messages = messages.flatten
     render :template => 'common/error_messages.api', :status => :unprocessable_entity, :layout => nil
   end
 

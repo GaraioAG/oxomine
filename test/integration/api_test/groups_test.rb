@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -18,11 +18,7 @@
 require File.expand_path('../../../test_helper', __FILE__)
 
 class Redmine::ApiTest::GroupsTest < Redmine::ApiTest::Base
-  fixtures :users, :groups_users
-
-  def setup
-    Setting.rest_api_enabled = '1'
-  end
+  fixtures :users, :groups_users, :email_addresses
 
   test "GET /groups.xml should require authentication" do
     get '/groups.xml'
@@ -109,7 +105,7 @@ class Redmine::ApiTest::GroupsTest < Redmine::ApiTest::Base
     assert_select 'group' do
       assert_select 'users' do
         assert_select 'user', Group.find(10).users.count
-        assert_select 'user[id=8]'
+        assert_select 'user[id="8"]'
       end
     end
   end
@@ -148,7 +144,7 @@ class Redmine::ApiTest::GroupsTest < Redmine::ApiTest::Base
     assert_equal 'application/xml', response.content_type
 
     assert_select 'errors' do
-      assert_select 'error', :text => /Name can't be blank/
+      assert_select 'error', :text => /Name cannot be blank/
     end
   end
 
@@ -168,7 +164,7 @@ class Redmine::ApiTest::GroupsTest < Redmine::ApiTest::Base
     assert_equal 'application/xml', response.content_type
 
     assert_select 'errors' do
-      assert_select 'error', :text => /Name can't be blank/
+      assert_select 'error', :text => /Name cannot be blank/
     end
   end
 
@@ -187,6 +183,19 @@ class Redmine::ApiTest::GroupsTest < Redmine::ApiTest::Base
       assert_equal '', @response.body
     end
     assert_include User.find(5), Group.find(10).users
+  end
+
+  test "POST /groups/:id/users.xml should not add the user if already added" do
+    Group.find(10).users << User.find(5)
+
+    assert_no_difference 'Group.find(10).users.count' do
+      post '/groups/10/users.xml', {:user_id => 5}, credentials('admin')
+      assert_response :unprocessable_entity
+    end
+
+    assert_select 'errors' do
+      assert_select 'error', :text => /User is invalid/
+    end
   end
 
   test "DELETE /groups/:id/users/:user_id.xml should remove user from the group" do

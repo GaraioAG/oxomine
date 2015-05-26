@@ -1,5 +1,5 @@
 /* Redmine - project management software
-   Copyright (C) 2006-2014  Jean-Philippe Lang */
+   Copyright (C) 2006-2015  Jean-Philippe Lang */
 
 function addFile(inputEl, file, eagerUpload) {
 
@@ -94,6 +94,7 @@ function uploadBlob(blob, uploadUrl, attachmentId, options) {
   uploadUrl = uploadUrl + '?attachment_id=' + attachmentId;
   if (blob instanceof window.File) {
     uploadUrl += '&filename=' + encodeURIComponent(blob.name);
+    uploadUrl += '&content_type=' + encodeURIComponent(blob.type);
   }
 
   return $.ajax(uploadUrl, {

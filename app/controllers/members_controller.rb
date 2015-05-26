@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -17,9 +17,9 @@
 
 class MembersController < ApplicationController
   model_object Member
-  before_filter :find_model_object, :except => [:index, :create, :autocomplete]
-  before_filter :find_project_from_association, :except => [:index, :create, :autocomplete]
-  before_filter :find_project_by_project_id, :only => [:index, :create, :autocomplete]
+  before_filter :find_model_object, :except => [:index, :new, :create, :autocomplete]
+  before_filter :find_project_from_association, :except => [:index, :new, :create, :autocomplete]
+  before_filter :find_project_by_project_id, :only => [:index, :new, :create, :autocomplete]
   before_filter :authorize
   accept_api_auth :index, :show, :create, :update, :destroy
 
@@ -32,7 +32,7 @@ class MembersController < ApplicationController
                     order("#{Member.table_name}.id").
                     limit(@limit).
                     offset(@offset).
-                    all
+                    to_a
     respond_to do |format|
       format.html { head 406 }
       format.api
@@ -44,6 +44,10 @@ class MembersController < ApplicationController
       format.html { head 406 }
       format.api
     end
+  end
+
+  def new
+    @member = Member.new
   end
 
   def create
@@ -63,7 +67,10 @@ class MembersController < ApplicationController
 
     respond_to do |format|
       format.html { redirect_to_settings_in_projects }
-      format.js { @members = members }
+      format.js {
+        @members = members
+        @member = Member.new
+      }
       format.api {
         @member = members.first
         if @member.valid?

@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -44,6 +44,11 @@ class ProjectCopyTest < ActiveSupport::TestCase
     @project = Project.new(:name => 'Copy Test', :identifier => 'copy-test')
     @project.trackers = @source_project.trackers
     @project.enabled_module_names = @source_project.enabled_modules.collect(&:name)
+  end
+
+  def test_copy_should_return_false_if_save_fails
+    project = Project.new(:name => 'Copy', :identifier => nil)
+    assert_equal false, project.copy(@source_project)
   end
 
   test "#copy should copy issues" do

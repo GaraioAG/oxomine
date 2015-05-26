@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@ class IssuePriority < Enumeration
   end
 
   def transfer_relations(to)
-    issues.update_all("priority_id = #{to.id}")
+    issues.update_all(:priority_id => to.id)
   end
 
   def css_classes

@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -37,7 +37,7 @@ class GroupBuiltin < Group
   class << self
     def load_instance
       return nil if self == GroupBuiltin
-      instance = first(:order => 'id') || create_instance
+      instance = order('id').first || create_instance
     end
 
     def create_instance

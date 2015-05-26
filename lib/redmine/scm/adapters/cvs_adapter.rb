@@ -43,10 +43,7 @@ module Redmine
           end
 
           def scm_command_version
-            scm_version = scm_version_from_command_line.dup
-            if scm_version.respond_to?(:force_encoding)
-              scm_version.force_encoding('ASCII-8BIT')
-            end
+            scm_version = scm_version_from_command_line.dup.force_encoding('ASCII-8BIT')
             if m = scm_version.match(%r{\A(.*?)((\d+\.)+\d+)}m)
               m[2].scan(%r{\d+}).collect(&:to_i)
             end
@@ -94,7 +91,7 @@ module Redmine
         def entries(path=nil, identifier=nil, options={})
           logger.debug "<cvs> entries '#{path}' with identifier '#{identifier}'"
           path_locale = scm_iconv(@path_encoding, 'UTF-8', path)
-          path_locale.force_encoding("ASCII-8BIT") if path_locale.respond_to?(:force_encoding)
+          path_locale.force_encoding("ASCII-8BIT")
           entries = Entries.new
           cmd_args = %w|-q rls -e|
           cmd_args << "-D" << time_to_cvstime_rlog(identifier) if identifier
@@ -171,6 +168,7 @@ module Redmine
             file_state = nil
             branch_map = nil
             io.each_line() do |line|
+              line = line.strip
               if state != "revision" && /^#{ENDLOG}/ =~ line
                 commit_log = String.new
                 revision   = nil
@@ -341,7 +339,7 @@ module Redmine
         # convert a date/time into the CVS-format
         def time_to_cvstime(time)
           return nil if time.nil?
-          time = Time.now if time == 'HEAD'
+          time = Time.now if (time.kind_of?(String) && time == 'HEAD')
 
           unless time.kind_of? Time
             time = Time.parse(time)

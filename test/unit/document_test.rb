@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -20,7 +20,7 @@ require File.expand_path('../../test_helper', __FILE__)
 class DocumentTest < ActiveSupport::TestCase
   fixtures :projects, :enumerations, :documents, :attachments,
            :enabled_modules,
-           :users, :members, :member_roles, :roles,
+           :users, :email_addresses, :members, :member_roles, :roles,
            :groups_users
 
   def test_create

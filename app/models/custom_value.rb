@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -18,6 +18,7 @@
 class CustomValue < ActiveRecord::Base
   belongs_to :custom_field
   belongs_to :customized, :polymorphic => true
+  attr_protected :id
 
   def initialize(attributes=nil, *args)
     super

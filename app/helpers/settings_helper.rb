@@ -1,7 +1,7 @@
 # encoding: utf-8
 #
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -102,6 +102,16 @@ module SettingsHelper
     end
 
     content_tag(:label, tag + text, options)
+  end
+
+  def link_copied_issue_options
+    options = [
+      [:general_text_Yes, 'yes'],
+      [:general_text_No, 'no'],
+      [:label_ask, 'ask']
+    ]
+
+    options.map {|label, value| [l(label), value.to_s]}
   end
 
   def cross_project_subtasks_options

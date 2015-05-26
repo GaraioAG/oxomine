@@ -125,8 +125,17 @@
         </ul>
 
         <ul>
+            <li>Forums:
+			    <ul>
+                    <li><strong>forum#1</strong> (link to forum with id 1</li>
+                    <li><strong>forum:Support</strong> (link to forum named Support)</li>
+                    <li><strong>forum:"Technical Support"</strong> (use double quotes if forum name contains spaces)</li>
+                </ul></li>
+        </ul>
+
+        <ul>
             <li>Forum messages:
-                <ul>
+			    <ul>
                     <li><strong>message#1218</strong> (link to message with id 1218)</li>
                 </ul></li>
         </ul>
@@ -135,10 +144,19 @@
             <li>Projects:
                 <ul>
                     <li><strong>project#3</strong> (link to project with id 3)</li>
-                    <li><strong>project:someproject</strong> (link to project named "someproject")</li>
+                    <li><strong>project:some-project</strong> (link to project with name or slug of "some-project")</li>
+                    <li><strong>project:"Some Project"</strong> (use double quotes for project name containing spaces)</li>
                 </ul></li>
         </ul>
 
+        <ul>
+            <li>News:
+			    <ul>
+                    <li><strong>news#2</strong> (link to news item with id 2)</li>
+                    <li><strong>news:Greetings</strong> (link to news item named "Greetings")</li>
+                    <li><strong>news:"First Release"</strong> (use double quotes if news item name contains spaces)</li>
+                </ul></li>
+        </ul>
 
         <p>Escaping:</p>
 
@@ -263,14 +281,14 @@ To go live, all you need to add is a database and a web server.
 
       <dt><code>child_pages</code></dt>
       <dd><p>Displays a list of child pages. With no argument, it displays the child pages of the current wiki page. Examples:</p>
-      <pre><code>!{{child_pages}} -- can be used from a wiki page only
-!{{child_pages(depth=2)}} -- display 2 levels nesting only</code></pre></dd>
+      <pre><code>{{child_pages}} -- can be used from a wiki page only
+{{child_pages(depth=2)}} -- display 2 levels nesting only</code></pre></dd>
 
       <dt><code>include</code></dt>
       <dd><p>Include a wiki page. Example:</p>
-      <pre><code>!{{include(Foo)}}</code></pre>
+      <pre><code>{{include(Foo)}}</code></pre>
       <p>or to include a page of a specific project wiki:</p>
-      <pre><code>!{{include(projectname:Foo)}}</code></pre></dd>
+      <pre><code>{{include(projectname:Foo)}}</code></pre></dd>
 
       <dt><code>collapse</code></dt>
       <dd><p>Inserts of collapsed block of text. Example:</p>
@@ -294,7 +312,7 @@ It can be expanded by clicking a link.
 
 <pre>
 &lt;pre&gt;&lt;code class="ruby"&gt;
-  Place you code here.
+  Place your code here.
 &lt;/code&gt;&lt;/pre&gt;
 </pre>
 

@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -45,6 +45,12 @@ DIFF
 and an email address <a class="email" href="mailto:foo@example.net">foo@example.net</a></p>
 EXPECTED
 
+    assert_equal expected.gsub(%r{[\r\n\t]}, ''), Redmine::WikiFormatting::NullFormatter::Formatter.new(raw).to_html.gsub(%r{[\r\n\t]}, '')
+  end
+
+  def test_should_link_email_with_slashes
+    raw = 'foo/bar@example.net'
+    expected = '<p><a class="email" href="mailto:foo/bar@example.net">foo/bar@example.net</a></p>'
     assert_equal expected.gsub(%r{[\r\n\t]}, ''), Redmine::WikiFormatting::NullFormatter::Formatter.new(raw).to_html.gsub(%r{[\r\n\t]}, '')
   end
 

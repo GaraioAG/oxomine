@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -25,11 +25,12 @@ class Repository < ActiveRecord::Base
   IDENTIFIER_MAX_LENGTH = 255
 
   belongs_to :project
-  has_many :changesets, :order => "#{Changeset.table_name}.committed_on DESC, #{Changeset.table_name}.id DESC"
+  has_many :changesets, lambda{order("#{Changeset.table_name}.committed_on DESC, #{Changeset.table_name}.id DESC")}
   has_many :filechanges, :class_name => 'Change', :through => :changesets
 
   serialize :extra_info
 
+  before_validation :normalize_identifier
   before_save :check_default
 
   # Raw SQL to delete changesets and changes in the database
@@ -38,13 +39,14 @@ class Repository < ActiveRecord::Base
 
   validates_length_of :password, :maximum => 255, :allow_nil => true
   validates_length_of :identifier, :maximum => IDENTIFIER_MAX_LENGTH, :allow_blank => true
-  validates_presence_of :identifier, :unless => Proc.new { |r| r.is_default? || r.set_as_default? }
-  validates_uniqueness_of :identifier, :scope => :project_id, :allow_blank => true
+  validates_uniqueness_of :identifier, :scope => :project_id
   validates_exclusion_of :identifier, :in => %w(browse show entry raw changes annotate diff statistics graph revisions revision)
   # donwcase letters, digits, dashes, underscores but not digits only
   validates_format_of :identifier, :with => /\A(?!\d+$)[a-z0-9\-_]*\z/, :allow_blank => true
   # Checks if the SCM is enabled when creating a repository
   validate :repo_create_validation, :on => :create
+  validate :validate_repository_path
+  attr_protected :id
 
   safe_attributes 'identifier',
     'login',
@@ -264,7 +266,7 @@ class Repository < ActiveRecord::Base
         reorder("#{Changeset.table_name}.committed_on DESC, #{Changeset.table_name}.id DESC").
         limit(limit).
         preload(:user).
-        all
+        to_a
     else
       filechanges.
         where("path = ?", path.with_leading_slash).
@@ -281,8 +283,7 @@ class Repository < ActiveRecord::Base
 
   # Returns an array of committers usernames and associated user_id
   def committers
-    @committers ||= Changeset.connection.select_rows(
-         "SELECT DISTINCT committer, user_id FROM #{Changeset.table_name} WHERE repository_id = #{id}")
+    @committers ||= Changeset.where(:repository_id => id).uniq.pluck(:committer, :user_id)
   end
 
   # Maps committers username to a user ids
@@ -313,7 +314,8 @@ class Repository < ActiveRecord::Base
       return @found_committer_users[committer] if @found_committer_users.has_key?(committer)
 
       user = nil
-      c = changesets.where(:committer => committer).includes(:user).first
+      c = changesets.where(:committer => committer).
+            includes(:user).references(:user).first
       if c && c.user
         user = c.user
       elsif committer.strip =~ /^([^<]+)(<(.*)>)?$/
@@ -456,6 +458,22 @@ class Repository < ActiveRecord::Base
 
   protected
 
+  # Validates repository url based against an optional regular expression
+  # that can be set in the Redmine configuration file.
+  def validate_repository_path(attribute=:url)
+    regexp = Redmine::Configuration["scm_#{scm_name.to_s.downcase}_path_regexp"]
+    if changes[attribute] && regexp.present?
+      regexp = regexp.to_s.strip.gsub('%project%') {Regexp.escape(project.try(:identifier).to_s)}
+      unless send(attribute).to_s.match(Regexp.new("\\A#{regexp}\\z"))
+        errors.add(attribute, :invalid)
+      end
+    end
+  end
+
+  def normalize_identifier
+    self.identifier = identifier.to_s.strip
+  end
+
   def check_default
     if !is_default? && set_as_default?
       self.is_default = true
@@ -484,10 +502,10 @@ class Repository < ActiveRecord::Base
     ci = "#{table_name_prefix}changesets_issues#{table_name_suffix}"
     cp = "#{table_name_prefix}changeset_parents#{table_name_suffix}"
 
-    connection.delete("DELETE FROM #{ch} WHERE #{ch}.changeset_id IN (SELECT #{cs}.id FROM #{cs} WHERE #{cs}.repository_id = #{id})")
-    connection.delete("DELETE FROM #{ci} WHERE #{ci}.changeset_id IN (SELECT #{cs}.id FROM #{cs} WHERE #{cs}.repository_id = #{id})")
-    connection.delete("DELETE FROM #{cp} WHERE #{cp}.changeset_id IN (SELECT #{cs}.id FROM #{cs} WHERE #{cs}.repository_id = #{id})")
-    connection.delete("DELETE FROM #{cs} WHERE #{cs}.repository_id = #{id}")
+    self.class.connection.delete("DELETE FROM #{ch} WHERE #{ch}.changeset_id IN (SELECT #{cs}.id FROM #{cs} WHERE #{cs}.repository_id = #{id})")
+    self.class.connection.delete("DELETE FROM #{ci} WHERE #{ci}.changeset_id IN (SELECT #{cs}.id FROM #{cs} WHERE #{cs}.repository_id = #{id})")
+    self.class.connection.delete("DELETE FROM #{cp} WHERE #{cp}.changeset_id IN (SELECT #{cs}.id FROM #{cs} WHERE #{cs}.repository_id = #{id})")
+    self.class.connection.delete("DELETE FROM #{cs} WHERE #{cs}.repository_id = #{id}")
     clear_extra_info_of_changesets
   end
 

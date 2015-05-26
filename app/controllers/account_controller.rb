@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -82,7 +82,8 @@ class AccountController < ApplicationController
       return
     else
       if request.post?
-        user = User.find_by_mail(params[:mail].to_s)
+        email = params[:mail].to_s
+        user = User.find_by_mail(email)
         # user not found
         unless user
           flash.now[:error] = l(:notice_account_unknown_email)
@@ -100,7 +101,9 @@ class AccountController < ApplicationController
         # create a new token for password recovery
         token = Token.new(:user => user, :action => "recovery")
         if token.save
-          Mailer.lost_password(token).deliver
+          # Don't use the param to send the email
+          recipent = user.mails.detect {|e| e.downcase == email.downcase} || user.mail
+          Mailer.lost_password(token, recipent).deliver
           flash[:notice] = l(:notice_account_lost_email_sent)
           redirect_to signin_path
           return
@@ -290,7 +293,7 @@ class AccountController < ApplicationController
     token = Token.new(:user => user, :action => "register")
     if user.save and token.save
       Mailer.register(token).deliver
-      flash[:notice] = l(:notice_account_register_done, :email => user.mail)
+      flash[:notice] = l(:notice_account_register_done, :email => ERB::Util.h(user.mail))
       redirect_to signin_path
     else
       yield if block_given?

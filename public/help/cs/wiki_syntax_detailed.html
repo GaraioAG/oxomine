@@ -125,8 +125,17 @@
         </ul>
 
         <ul>
+            <li>Forums:
+			    <ul>
+                    <li><strong>forum#1</strong> (link to forum with id 1</li>
+                    <li><strong>forum:Support</strong> (link to forum named Support)</li>
+                    <li><strong>forum:"Technical Support"</strong> (use double quotes if forum name contains spaces)</li>
+                </ul></li>
+        </ul>
+
+        <ul>
             <li>Příspěvky diskuzního fóra:
-                <ul>
+			    <ul>
                     <li><strong>message#1218</strong> (odkaz na příspěvek s ID 1218)</li>
                 </ul></li>
         </ul>
@@ -136,9 +145,18 @@
                 <ul>
                     <li><strong>project#3</strong> (odkaz na projekt s ID 3)</li>
                     <li><strong>project:projekt_test</strong> (odkaz na projekt pojmenovaný "projekt_test")</li>
+                    <li><strong>project:"projekt test"</strong> (odkaz na projekt pojmenovaný "projekt test")</li>
                 </ul></li>
         </ul>
 
+        <ul>
+            <li>News:
+			    <ul>
+                    <li><strong>news#2</strong> (link to news item with id 2)</li>
+                    <li><strong>news:Greetings</strong> (link to news item named "Greetings")</li>
+                    <li><strong>news:"First Release"</strong> (use double quotes if news item name contains spaces)</li>
+                </ul></li>
+        </ul>
 
         <p>Escaping:</p>
 
@@ -263,14 +281,14 @@ Vše, co je potřeba, je databázový a webový server.
 
       <dt><code>child_pages</code></dt>
       <dd><p>Displays a list of child pages. With no argument, it displays the child pages of the current wiki page. Examples:</p>
-      <pre><code>!{{child_pages}} -- can be used from a wiki page only
-!{{child_pages(depth=2)}} -- display 2 levels nesting only</code></pre></dd>
+      <pre><code>{{child_pages}} -- can be used from a wiki page only
+{{child_pages(depth=2)}} -- display 2 levels nesting only</code></pre></dd>
 
       <dt><code>include</code></dt>
       <dd><p>Vloží Wiki stránku. Např.:</p>
-      <pre><code>!{{include(Foo)}}</code></pre>
+      <pre><code>{{include(Foo)}}</code></pre>
       <p>or to include a page of a specific project wiki:</p>
-      <pre><code>!{{include(projectname:Foo)}}</code></pre></dd>
+      <pre><code>{{include(projectname:Foo)}}</code></pre></dd>
 
       <dt><code>collapse</code></dt>
       <dd><p>Inserts of collapsed block of text. Example:</p>

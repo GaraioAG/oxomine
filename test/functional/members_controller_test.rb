@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -23,6 +23,17 @@ class MembersControllerTest < ActionController::TestCase
   def setup
     User.current = nil
     @request.session[:user_id] = 2
+  end
+
+  def test_new
+    get :new, :project_id => 1
+    assert_response :success
+  end
+
+  def test_xhr_new
+    xhr :get, :new, :project_id => 1
+    assert_response :success
+    assert_equal 'text/javascript', response.content_type
   end
 
   def test_create
@@ -104,7 +115,7 @@ class MembersControllerTest < ActionController::TestCase
   end
 
   def test_autocomplete
-    get :autocomplete, :project_id => 1, :q => 'mis', :format => 'js'
+    xhr :get, :autocomplete, :project_id => 1, :q => 'mis', :format => 'js'
     assert_response :success
     assert_include 'User Misc', response.body
   end

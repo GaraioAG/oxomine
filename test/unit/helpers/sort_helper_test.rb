@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -54,7 +54,7 @@ class SortHelperTest < ActionView::TestCase
     sort_init 'attr1', 'desc'
     sort_update({'attr1' => 'table1.attr1', 'attr2' => 'table2.attr2'})
 
-    assert_equal ['table1.attr1', 'table2.attr2 DESC'], sort_clause
+    assert_equal ['table1.attr1 ASC', 'table2.attr2 DESC'], sort_clause
     assert_equal 'attr1,attr2:desc', @session['foo_bar_sort']
   end
 
@@ -74,7 +74,7 @@ class SortHelperTest < ActionView::TestCase
     sort_init 'attr1', 'desc'
     sort_update({'attr1' => 'table1.attr1', 'attr2' => 'table2.attr2'})
 
-    assert_equal ['table1.attr1', 'table2.attr2'], sort_clause
+    assert_equal ['table1.attr1 ASC', 'table2.attr2 ASC'], sort_clause
     assert_equal 'attr1,attr2', @session['foo_bar_sort']
   end
 

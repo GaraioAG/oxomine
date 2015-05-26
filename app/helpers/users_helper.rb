@@ -1,7 +1,7 @@
 # encoding: utf-8
 #
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -39,6 +39,12 @@ module UsersHelper
       link_to l(:button_activate), url.merge(:user => {:status => User::STATUS_ACTIVE}), :method => :put, :class => 'icon icon-unlock'
     elsif user != User.current
       link_to l(:button_lock), url.merge(:user => {:status => User::STATUS_LOCKED}), :method => :put, :class => 'icon icon-lock'
+    end
+  end
+
+  def additional_emails_link(user)
+    if user.email_addresses.count > 1 || Setting.max_additional_emails.to_i > 0
+      link_to l(:label_email_address_plural), user_email_addresses_path(@user), :class => 'icon icon-email-add', :remote => true
     end
   end
 

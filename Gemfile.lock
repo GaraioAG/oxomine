@@ -1,5 +1,6 @@
 GEM
   remote: https://rubygems.org/
+  remote: http://rubygems.org/
   specs:
     actionmailer (4.2.1)
       actionpack (= 4.2.1)
@@ -53,6 +54,8 @@ GEM
     coderay (1.1.0)
     docile (1.1.5)
     erubis (2.7.0)
+    faraday (0.9.1)
+      multipart-post (>= 1.2, < 3)
     ffi (1.9.8)
     globalid (0.3.5)
       activesupport (>= 4.1.0)
@@ -61,6 +64,7 @@ GEM
       railties (>= 3.0, < 5.0)
       thor (>= 0.14, < 2.0)
     json (1.8.2)
+    jwt (1.5.0)
     loofah (2.0.2)
       nokogiri (>= 1.5.9)
     mail (2.6.3)
@@ -72,9 +76,17 @@ GEM
     mocha (1.1.0)
       metaclass (~> 0.0.1)
     multi_json (1.11.0)
+    multi_xml (0.5.5)
+    multipart-post (2.0.0)
     net-ldap (0.3.1)
     nokogiri (1.6.6.2)
       mini_portile (~> 0.6.0)
+    oauth2 (1.0.0)
+      faraday (>= 0.8, < 0.10)
+      jwt (~> 1.0)
+      multi_json (~> 1.3)
+      multi_xml (~> 0.5)
+      rack (~> 1.2)
     pg (0.18.2)
     protected_attributes (1.0.9)
       activemodel (>= 4.0.1, < 5.0)
@@ -153,10 +165,12 @@ DEPENDENCIES
   capybara
   coderay (~> 1.1.0)
   jquery-rails (~> 3.1.1)
+  json
   mime-types
   minitest
   mocha
   net-ldap (~> 0.3.1)
+  oauth2
   pg
   protected_attributes
   rack-openid

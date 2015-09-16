@@ -83,7 +83,7 @@ class Version < ActiveRecord::Base
   # Returns the total estimated time for this version
   # (sum of leaves estimated_hours)
   def estimated_hours
-    @estimated_hours ||= fixed_issues.leaves.sum(:estimated_hours).to_f
+    @estimated_hours ||= fixed_issues.sum(:estimated_hours).to_f
   end
 
   # Returns the total reported time for this version
@@ -227,6 +227,10 @@ class Version < ActiveRecord::Base
     sharing != 'none'
   end
 
+  def deletable?
+    fixed_issues.empty? && !referenced_by_a_custom_field?
+  end
+
   private
 
   def load_issue_counts
@@ -287,5 +291,10 @@ class Version < ActiveRecord::Base
       end
       progress
     end
+  end
+
+  def referenced_by_a_custom_field?
+    CustomValue.joins(:custom_field).
+      where(:value => id.to_s, :custom_fields => {:field_format => 'version'}).any?
   end
 end

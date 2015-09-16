@@ -4,7 +4,7 @@ if Gem::Version.new(Bundler::VERSION) < Gem::Version.new('1.5.0')
   abort "Redmine requires Bundler 1.5.0 or higher (you're using #{Bundler::VERSION}).\nPlease update with 'gem update bundler'."
 end
 
-gem "rails", "4.2.3"
+gem "rails", "4.2.4"
 gem "jquery-rails", "~> 3.1.3"
 gem "coderay", "~> 1.1.0"
 gem "builder", ">= 3.0.4"
@@ -13,6 +13,7 @@ gem "mime-types"
 gem "protected_attributes"
 gem "actionpack-action_caching"
 gem "actionpack-xml_parser"
+gem "loofah", "~> 2.0"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem 'tzinfo-data', platforms: [:mingw, :x64_mingw, :mswin, :jruby]
@@ -32,7 +33,7 @@ end
 platforms :mri, :mingw, :x64_mingw do
   # Optional gem for exporting the gantt to a PNG file, not supported with jruby
   group :rmagick do
-    gem "rmagick", "~> 2.13.4"
+    gem "rmagick", ">= 2.14.0"
   end
 
   # Optional Markdown support, not for JRuby
@@ -64,7 +65,7 @@ if File.exist?(database_file)
       when 'mysql'
         gem "activerecord-jdbcmysql-adapter", :platforms => :jruby
       when /postgresql/
-        gem "pg", "~> 0.17.1", :platforms => [:mri, :mingw, :x64_mingw]
+        gem "pg", "~> 0.18.1", :platforms => [:mri, :mingw, :x64_mingw]
         gem "activerecord-jdbcpostgresql-adapter", :platforms => :jruby
       when /sqlite3/
         gem "sqlite3", :platforms => [:mri, :mingw, :x64_mingw]

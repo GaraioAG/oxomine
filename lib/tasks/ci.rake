@@ -56,7 +56,7 @@ file 'config/database.yml' do
   test_db_name = "ci_#{branch}_#{ruby}_test"
 
   case database
-  when 'mysql'
+  when /(mysql|mariadb)/
     dev_conf =  {'adapter' => 'mysql2',
                  'database' => dev_db_name, 'host' => 'localhost',
                  'encoding' => 'utf8'}
@@ -67,7 +67,7 @@ file 'config/database.yml' do
       dev_conf['password'] = 'jenkins'
     end
     test_conf = dev_conf.merge('database' => test_db_name)
-  when 'postgresql'
+  when /postgresql/
     dev_conf =  {'adapter' => 'postgresql', 'database' => dev_db_name,
                  'host' => 'localhost'}
     if ENV['RUN_ON_NOT_OFFICIAL']

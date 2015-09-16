@@ -29,14 +29,10 @@ class Project < ActiveRecord::Base
 
   # Specific overridden Activities
   has_many :time_entry_activities
+  has_many :memberships, :class_name => 'Member', :inverse_of => :project
+  # Memberships of active users only
   has_many :members,
-           lambda { joins(:principal, :roles).
-                    where("#{Principal.table_name}.type='User' AND #{Principal.table_name}.status=#{Principal::STATUS_ACTIVE}") }
-  has_many :memberships, :class_name => 'Member'
-  has_many :member_principals,
-           lambda { joins(:principal).
-                    where("#{Principal.table_name}.status=#{Principal::STATUS_ACTIVE}")},
-    :class_name => 'Member'
+           lambda { joins(:principal).where(:users => {:type => 'User', :status => Principal::STATUS_ACTIVE}) }
   has_many :enabled_modules, :dependent => :delete_all
   has_and_belongs_to_many :trackers, lambda {order(:position)}
   has_many :issues, :dependent => :destroy
@@ -192,7 +188,11 @@ class Project < ActiveRecord::Base
       unless options[:member]
         role = user.builtin_role
         if role.allowed_to?(permission)
-          statement_by_role[role] = "#{Project.table_name}.is_public = #{connection.quoted_true}"
+          s = "#{Project.table_name}.is_public = #{connection.quoted_true}"
+          if user.id
+            s = "(#{s} AND #{Project.table_name}.id NOT IN (SELECT project_id FROM #{Member.table_name} WHERE user_id = #{user.id}))"
+          end
+          statement_by_role[role] = s
         end
       end
       user.projects_by_role.each do |role, projects|
@@ -216,8 +216,9 @@ class Project < ActiveRecord::Base
   end
 
   def override_roles(role)
-    @override_members ||= member_principals.
-      where("#{Principal.table_name}.type IN (?)", ['GroupAnonymous', 'GroupNonMember']).to_a
+    @override_members ||= memberships.
+      joins(:principal).
+      where(:users => {:type => ['GroupAnonymous', 'GroupNonMember']}).to_a
 
     group_class = role.anonymous? ? GroupAnonymous : GroupNonMember
     member = @override_members.detect {|m| m.principal.is_a? group_class}
@@ -234,11 +235,17 @@ class Project < ActiveRecord::Base
 
   # Returns the Systemwide and project specific activities
   def activities(include_inactive=false)
-    if include_inactive
-      return all_activities
-    else
-      return active_activities
+    t = TimeEntryActivity.table_name
+    scope = TimeEntryActivity.where("#{t}.project_id IS NULL OR #{t}.project_id = ?", id)
+
+    overridden_activity_ids = self.time_entry_activities.pluck(:parent_id).compact
+    if overridden_activity_ids.any?
+      scope = scope.where("#{t}.id NOT IN (?)", overridden_activity_ids)
     end
+    unless include_inactive
+      scope = scope.active
+    end
+    scope
   end
 
   # Will create a new Project specific Activity or update an existing one
@@ -733,6 +740,11 @@ class Project < ActiveRecord::Base
     end
   end
 
+  def member_principals
+    ActiveSupport::Deprecation.warn "Project#member_principals is deprecated and will be removed in Redmine 4.0. Use #memberships.active instead."
+    memberships.active
+  end
+
   # Returns a new unsaved Project instance with attributes copied from +project+
   def self.copy_from(project)
     project = project.is_a?(Project) ? project : Project.find(project)
@@ -987,42 +999,6 @@ class Project < ActiveRecord::Base
 
   def allowed_actions
     @actions_allowed ||= allowed_permissions.inject([]) { |actions, permission| actions += Redmine::AccessControl.allowed_actions(permission) }.flatten
-  end
-
-  # Returns all the active Systemwide and project specific activities
-  def active_activities
-    overridden_activity_ids = self.time_entry_activities.collect(&:parent_id)
-
-    if overridden_activity_ids.empty?
-      return TimeEntryActivity.shared.active
-    else
-      return system_activities_and_project_overrides
-    end
-  end
-
-  # Returns all the Systemwide and project specific activities
-  # (inactive and active)
-  def all_activities
-    overridden_activity_ids = self.time_entry_activities.collect(&:parent_id)
-
-    if overridden_activity_ids.empty?
-      return TimeEntryActivity.shared
-    else
-      return system_activities_and_project_overrides(true)
-    end
-  end
-
-  # Returns the systemwide active activities merged with the project specific overrides
-  def system_activities_and_project_overrides(include_inactive=false)
-    t = TimeEntryActivity.table_name
-    scope = TimeEntryActivity.where(
-      "(#{t}.project_id IS NULL AND #{t}.id NOT IN (?)) OR (#{t}.project_id = ?)",
-      time_entry_activities.map(&:parent_id), id
-    )
-    unless include_inactive
-      scope = scope.active
-    end
-    scope
   end
 
   # Archives subprojects recursively

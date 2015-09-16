@@ -25,6 +25,7 @@ module ApplicationHelper
   include Redmine::I18n
   include GravatarHelper::PublicMethods
   include Redmine::Pagination::Helper
+  include Redmine::SudoMode::Helper
 
   extend Forwardable
   def_delegators :wiki_helper, :wikitoolbar_for, :heads_for_wiki_formatter
@@ -1117,7 +1118,7 @@ module ApplicationHelper
 
   def checked_image(checked=true)
     if checked
-      image_tag 'toggle_check.png'
+      @checked_image_tag ||= image_tag('toggle_check.png')
     end
   end
 
@@ -1250,6 +1251,14 @@ module ApplicationHelper
     end
   end
 
+  # Returns a link to edit user's avatar if avatars are enabled
+  def avatar_edit_link(user, options={})
+    if Setting.gravatar_enabled?
+      url = "https://gravatar.com"
+      link_to avatar(user, {:title => l(:button_edit)}.merge(options)), url, :target => '_blank'
+    end
+  end
+
   def sanitize_anchor_name(anchor)
     anchor.gsub(%r{[^\s\-\p{Word}]}, '').gsub(%r{\s+(\-+\s*)?}, '-')
   end
@@ -1305,6 +1314,11 @@ module ApplicationHelper
     else
       options
     end
+  end
+
+  def generate_csv(&block)
+    decimal_separator = l(:general_csv_decimal_separator)
+    encoding = l(:general_csv_encoding)
   end
 
   private

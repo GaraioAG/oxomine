@@ -22,28 +22,33 @@ class MailHandler < ActionMailer::Base
   class UnauthorizedAction < StandardError; end
   class MissingInformation < StandardError; end
 
-  attr_reader :email, :user
+  attr_reader :email, :user, :handler_options
 
-  def self.receive(email, options={})
-    @@handler_options = options.deep_dup
+  def self.receive(raw_mail, options={})
+    options = options.deep_dup
 
-    @@handler_options[:issue] ||= {}
+    options[:issue] ||= {}
 
-    if @@handler_options[:allow_override].is_a?(String)
-      @@handler_options[:allow_override] = @@handler_options[:allow_override].split(',').collect(&:strip)
+    if options[:allow_override].is_a?(String)
+      options[:allow_override] = options[:allow_override].split(',').collect(&:strip)
     end
-    @@handler_options[:allow_override] ||= []
+    options[:allow_override] ||= []
     # Project needs to be overridable if not specified
-    @@handler_options[:allow_override] << 'project' unless @@handler_options[:issue].has_key?(:project)
+    options[:allow_override] << 'project' unless options[:issue].has_key?(:project)
     # Status overridable by default
-    @@handler_options[:allow_override] << 'status' unless @@handler_options[:issue].has_key?(:status)
+    options[:allow_override] << 'status' unless options[:issue].has_key?(:status)
 
-    @@handler_options[:no_account_notice] = (@@handler_options[:no_account_notice].to_s == '1')
-    @@handler_options[:no_notification] = (@@handler_options[:no_notification].to_s == '1')
-    @@handler_options[:no_permission_check] = (@@handler_options[:no_permission_check].to_s == '1')
+    options[:no_account_notice] = (options[:no_account_notice].to_s == '1')
+    options[:no_notification] = (options[:no_notification].to_s == '1')
+    options[:no_permission_check] = (options[:no_permission_check].to_s == '1')
 
-    email.force_encoding('ASCII-8BIT')
-    super(email)
+    raw_mail.force_encoding('ASCII-8BIT')
+
+    ActiveSupport::Notifications.instrument("receive.action_mailer") do |payload|
+      mail = Mail.new(raw_mail)
+      set_payload_for_mail(payload, mail)
+      new.receive(mail, options)
+    end
   end
 
   # Receives an email and rescues any exception
@@ -64,6 +69,9 @@ class MailHandler < ActionMailer::Base
     %w(allow_override unknown_user no_permission_check no_account_notice default_group).each do |option|
       options[option.to_sym] = env[option] if env[option]
     end
+    if env['private']
+      options[:issue][:is_private] = '1'
+    end
     options
   end
 
@@ -72,15 +80,16 @@ class MailHandler < ActionMailer::Base
   end
 
   cattr_accessor :ignored_emails_headers
-  @@ignored_emails_headers = {
+  self.ignored_emails_headers = {
     'Auto-Submitted' => /\Aauto-(replied|generated)/,
     'X-Autoreply' => 'yes'
   }
 
   # Processes incoming emails
   # Returns the created object (eg. an issue, a message) or false
-  def receive(email)
+  def receive(email, options={})
     @email = email
+    @handler_options = options
     sender_email = email.from.to_a.first.to_s.strip
     # Ignore emails received from the application emission address to avoid hell cycles
     if sender_email.downcase == Setting.mail_from.to_s.strip.downcase
@@ -111,7 +120,7 @@ class MailHandler < ActionMailer::Base
     end
     if @user.nil?
       # Email was submitted by an unknown user
-      case @@handler_options[:unknown_user]
+      case handler_options[:unknown_user]
       when 'accept'
         @user = User.anonymous
       when 'create'
@@ -120,8 +129,8 @@ class MailHandler < ActionMailer::Base
           if logger
             logger.info "MailHandler: [#{@user.login}] account created"
           end
-          add_user_to_group(@@handler_options[:default_group])
-          unless @@handler_options[:no_account_notice]
+          add_user_to_group(handler_options[:default_group])
+          unless handler_options[:no_account_notice]
             Mailer.account_information(@user, @user.password).deliver
           end
         else
@@ -186,7 +195,7 @@ class MailHandler < ActionMailer::Base
   def receive_issue
     project = target_project
     # check permission
-    unless @@handler_options[:no_permission_check]
+    unless handler_options[:no_permission_check]
       raise UnauthorizedAction unless user.allowed_to?(:add_issues, project)
     end
 
@@ -199,6 +208,7 @@ class MailHandler < ActionMailer::Base
     end
     issue.description = cleaned_up_text_body
     issue.start_date ||= Date.today if Setting.default_issue_start_date_to_creation_date?
+    issue.is_private = (handler_options[:issue][:is_private] == '1')
 
     # add To and Cc as watchers before saving so the watchers can reply to Redmine
     add_watchers(issue)
@@ -213,7 +223,7 @@ class MailHandler < ActionMailer::Base
     issue = Issue.find_by_id(issue_id)
     return unless issue
     # check permission
-    unless @@handler_options[:no_permission_check]
+    unless handler_options[:no_permission_check]
       unless user.allowed_to?(:add_issue_notes, issue.project) ||
                user.allowed_to?(:edit_issues, issue.project)
         raise UnauthorizedAction
@@ -221,7 +231,7 @@ class MailHandler < ActionMailer::Base
     end
 
     # ignore CLI-supplied defaults for new issues
-    @@handler_options[:issue].clear
+    handler_options[:issue].clear
 
     journal = issue.init_journal(user)
     if from_journal && from_journal.private_notes?
@@ -253,7 +263,7 @@ class MailHandler < ActionMailer::Base
     if message
       message = message.root
 
-      unless @@handler_options[:no_permission_check]
+      unless handler_options[:no_permission_check]
         raise UnauthorizedAction unless user.allowed_to?(:add_messages, message.project)
       end
 
@@ -318,11 +328,11 @@ class MailHandler < ActionMailer::Base
       @keywords[attr]
     else
       @keywords[attr] = begin
-        if (options[:override] || @@handler_options[:allow_override].include?(attr.to_s)) &&
+        if (options[:override] || handler_options[:allow_override].include?(attr.to_s)) &&
               (v = extract_keyword!(cleaned_up_text_body, attr, options[:format]))
           v
-        elsif !@@handler_options[:issue][attr].blank?
-          @@handler_options[:issue][attr]
+        elsif !handler_options[:issue][attr].blank?
+          handler_options[:issue][attr]
         end
       end
     end
@@ -359,7 +369,7 @@ class MailHandler < ActionMailer::Base
     target = Project.find_by_identifier(get_keyword(:project))
     if target.nil?
       # Invalid project keyword, use the project specified as the default one
-      default_project = @@handler_options[:issue][:project]
+      default_project = handler_options[:issue][:project]
       if default_project.present?
         target = Project.find_by_identifier(default_project)
       end
@@ -423,14 +433,11 @@ class MailHandler < ActionMailer::Base
     @plain_text_body = parts.map do |p|
       body_charset = Mail::RubyVer.respond_to?(:pick_encoding) ?
                        Mail::RubyVer.pick_encoding(p.charset).to_s : p.charset
-      Redmine::CodesetUtil.to_utf8(p.body.decoded, body_charset)
-    end.join("\r\n")
 
-    # strip html tags and remove doctype directive
-    if parts.any? {|p| p.mime_type == 'text/html'}
-      @plain_text_body = strip_tags(@plain_text_body.strip)
-      @plain_text_body.sub! %r{^<!DOCTYPE .*$}, ''
-    end
+      body = Redmine::CodesetUtil.to_utf8(p.body.decoded, body_charset)
+      # convert html parts to text
+      p.mime_type == 'text/html' ? self.class.html_body_to_text(body) : self.class.plain_text_body_to_text(body)
+    end.join("\r\n")
 
     @plain_text_body
   end
@@ -442,6 +449,18 @@ class MailHandler < ActionMailer::Base
   def cleaned_up_subject
     subject = email.subject.to_s
     subject.strip[0,255]
+  end
+
+  # Converts a HTML email body to text
+  def self.html_body_to_text(html)
+    Redmine::WikiFormatting.html_parser.to_text(html)
+  end
+
+  # Converts a plain/text email body to text
+  def self.plain_text_body_to_text(text)
+    # Removes leading spaces that would cause the line to be rendered as
+    # preformatted text with textile
+    text.gsub(/^ +(?![*#])/, '')
   end
 
   def self.assign_string_attribute_with_limit(object, attribute, value, limit=nil)
@@ -485,7 +504,7 @@ class MailHandler < ActionMailer::Base
     end
     if addr.present?
       user = self.class.new_user_from_attributes(addr, name)
-      if @@handler_options[:no_notification]
+      if handler_options[:no_notification]
         user.mail_notification = 'none'
       end
       if user.save

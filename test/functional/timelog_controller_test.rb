@@ -95,6 +95,13 @@ class TimelogControllerTest < ActionController::TestCase
     assert_select 'option', :text => 'Inactive Activity', :count => 0
   end
 
+  def test_post_new_as_js_should_update_activity_options
+    @request.session[:user_id] = 3
+    post :new, :time_entry => {:project_id => 1}, :format => 'js'
+    assert_response :success
+    assert_include '#time_entry_activity_id', response.body
+  end
+
   def test_get_edit_existing_time
     @request.session[:user_id] = 2
     get :edit, :id => 2, :project_id => nil
@@ -106,7 +113,7 @@ class TimelogControllerTest < ActionController::TestCase
   def test_get_edit_with_an_existing_time_entry_with_inactive_activity
     te = TimeEntry.find(1)
     te.activity = TimeEntryActivity.find_by_name("Inactive Activity")
-    te.save!
+    te.save!(:validate => false)
 
     @request.session[:user_id] = 1
     get :edit, :project_id => 1, :id => 1

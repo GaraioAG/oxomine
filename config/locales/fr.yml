@@ -224,6 +224,7 @@ fr:
   error_attachment_too_big: Ce fichier ne peut pas être attaché car il excède la taille maximale autorisée (%{max_size})
   error_session_expired: "Votre session a expiré. Veuillez vous reconnecter."
   warning_attachments_not_saved: "%{count} fichier(s) n'ont pas pu être sauvegardés."
+  error_password_expired: "Votre mot de passe a expiré ou nécessite d'être changé."
 
   mail_subject_lost_password: "Votre mot de passe %{value}"
   mail_body_lost_password: 'Pour changer votre mot de passe, cliquez sur le lien suivant :'
@@ -360,6 +361,8 @@ fr:
   field_must_change_passwd: Doit changer de mot de passe à la prochaine connexion
   field_default_status: Statut par défaut
   field_users_visibility: Visibilité des utilisateurs
+  field_time_entries_visibility: Visibilité du temps passé
+  field_total_estimated_hours: Temps estimé total
 
   setting_app_title: Titre de l'application
   setting_app_subtitle: Sous-titre de l'application
@@ -406,6 +409,7 @@ fr:
   setting_file_max_size_displayed: Taille maximum des fichiers texte affichés en ligne
   setting_repository_log_display_limit: "Nombre maximum de révisions affichées sur l'historique d'un fichier"
   setting_openid: "Autoriser l'authentification et l'enregistrement OpenID"
+  setting_password_max_age: Expiration des mots de passe après
   setting_password_min_length: Longueur minimum des mots de passe
   setting_new_project_user_role_id: Rôle donné à un utilisateur non-administrateur qui crée un projet
   setting_default_projects_modules: Modules activés par défaut pour les nouveaux projets
@@ -571,6 +575,7 @@ fr:
   label_register: S'enregistrer
   label_login_with_open_id_option: S'authentifier avec OpenID
   label_password_lost: Mot de passe perdu
+  label_password_required: Confirmez votre mot de passe pour continuer
   label_home: Accueil
   label_my_page: Ma page
   label_my_account: Mon compte
@@ -764,6 +769,7 @@ fr:
   label_changes_details: Détails de tous les changements
   label_issue_tracking: Suivi des demandes
   label_spent_time: Temps passé
+  label_total_spent_time: Temps passé total
   label_overall_spent_time: Temps passé global
   label_f_hour: "%{value} heure"
   label_f_hour_plural: "%{value} heures"
@@ -959,6 +965,12 @@ fr:
   label_enable_notifications: Activer les notifications
   label_disable_notifications: Désactiver les notifications
   label_blank_value: non renseigné
+  label_parent_task_attributes: Attributs des tâches parentes
+  label_time_entries_visibility_all: Tous les temps passés
+  label_time_entries_visibility_own: Ses propres temps passés
+  label_member_management: Gestion des membres
+  label_member_management_all_roles: Tous les rôles
+  label_member_management_selected_roles_only: Ces rôles uniquement
 
   button_login: Connexion
   button_submit: Soumettre
@@ -1151,3 +1163,5 @@ fr:
   description_date_from: Date de début
   description_date_to: Date de fin
   text_repository_identifier_info: 'Seuls les lettres minuscules (a-z), chiffres, tirets et tirets bas sont autorisés.<br />Un fois sauvegardé, l''identifiant ne pourra plus être modifié.'
+  label_parent_task_attributes_derived: Calculated from subtasks
+  label_parent_task_attributes_independent: Independent of subtasks

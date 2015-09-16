@@ -310,6 +310,15 @@ class IssueTest < ActiveSupport::TestCase
     assert_visibility_match user, issues
   end
 
+  def test_visible_scope_for_member_without_view_issues_permission_and_non_member_role_having_the_permission
+    Role.non_member.add_permission!(:view_issues)
+    Role.find(1).remove_permission!(:view_issues)
+    user = User.find(2)
+
+    assert_equal 0, Issue.where(:project_id => 1).visible(user).count
+    assert_equal false, Issue.where(:project_id => 1).first.visible?(user)
+  end
+
   def test_visible_scope_for_member_with_groups_should_return_assigned_issues
     user = User.find(8)
     assert user.groups.any?
@@ -899,6 +908,29 @@ class IssueTest < ActiveSupport::TestCase
     issue = Issue.new(:project_id => 1, :tracker_id => 1, :status_id => 1,
                       :subject => 'Required fields', :author => user)
     assert issue.save
+  end
+
+  def test_required_custom_field_that_is_not_visible_for_the_user_should_not_be_required
+    CustomField.delete_all
+    field = IssueCustomField.generate!(:is_required => true, :visible => false, :role_ids => [1], :trackers => Tracker.all, :is_for_all => true)
+    user = User.generate!
+    User.add_to_project(user, Project.find(1), Role.find(2))
+
+    issue = Issue.new(:project_id => 1, :tracker_id => 1, :status_id => 1,
+                      :subject => 'Required fields', :author => user)
+    assert_save issue
+  end
+
+  def test_required_custom_field_that_is_visible_for_the_user_should_be_required
+    CustomField.delete_all
+    field = IssueCustomField.generate!(:is_required => true, :visible => false, :role_ids => [1], :trackers => Tracker.all, :is_for_all => true)
+    user = User.generate!
+    User.add_to_project(user, Project.find(1), Role.find(1))
+
+    issue = Issue.new(:project_id => 1, :tracker_id => 1, :status_id => 1,
+                      :subject => 'Required fields', :author => user)
+    assert !issue.save
+    assert_include "#{field.name} cannot be blank", issue.errors.full_messages
   end
 
   def test_required_attribute_names_for_multiple_roles_should_intersect_rules

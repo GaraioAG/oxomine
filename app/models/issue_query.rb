@@ -35,6 +35,10 @@ class IssueQuery < Query
     QueryColumn.new(:start_date, :sortable => "#{Issue.table_name}.start_date"),
     QueryColumn.new(:due_date, :sortable => "#{Issue.table_name}.due_date"),
     QueryColumn.new(:estimated_hours, :sortable => "#{Issue.table_name}.estimated_hours"),
+    QueryColumn.new(:total_estimated_hours,
+      :sortable => "COALESCE((SELECT SUM(estimated_hours) FROM #{Issue.table_name} subtasks" +
+        " WHERE subtasks.root_id = #{Issue.table_name}.root_id AND subtasks.lft >= #{Issue.table_name}.lft AND subtasks.rgt <= #{Issue.table_name}.rgt), 0)",
+      :default_order => 'desc'),
     QueryColumn.new(:done_ratio, :sortable => "#{Issue.table_name}.done_ratio", :groupable => true),
     QueryColumn.new(:created_on, :sortable => "#{Issue.table_name}.created_on", :default_order => 'desc'),
     QueryColumn.new(:closed_on, :sortable => "#{Issue.table_name}.closed_on", :default_order => 'desc'),
@@ -241,6 +245,8 @@ class IssueQuery < Query
     IssueRelation::TYPES.each do |relation_type, options|
       add_available_filter relation_type, :type => :relation, :label => options[:name]
     end
+    add_available_filter "parent_id", :type => :tree, :label => :field_parent_issue
+    add_available_filter "child_id", :type => :tree, :label => :label_subtask_plural
 
     Tracker.disabled_core_fields(trackers).each {|field|
       delete_available_filter field
@@ -264,6 +270,12 @@ class IssueQuery < Query
         :sortable => "COALESCE((SELECT SUM(hours) FROM #{TimeEntry.table_name} WHERE #{TimeEntry.table_name}.issue_id = #{Issue.table_name}.id), 0)",
         :default_order => 'desc',
         :caption => :label_spent_time
+      )
+      @available_columns.insert index+1, QueryColumn.new(:total_spent_hours,
+        :sortable => "COALESCE((SELECT SUM(hours) FROM #{TimeEntry.table_name} JOIN #{Issue.table_name} subtasks ON subtasks.id = #{TimeEntry.table_name}.issue_id" +
+          " WHERE subtasks.root_id = #{Issue.table_name}.root_id AND subtasks.lft >= #{Issue.table_name}.lft AND subtasks.rgt <= #{Issue.table_name}.rgt), 0)",
+        :default_order => 'desc',
+        :caption => :label_total_spent_time
       )
     end
 
@@ -344,6 +356,9 @@ class IssueQuery < Query
 
     if has_column?(:spent_hours)
       Issue.load_visible_spent_hours(issues)
+    end
+    if has_column?(:total_spent_hours)
+      Issue.load_visible_total_spent_hours(issues)
     end
     if has_column?(:relations)
       Issue.load_visible_relations(issues)
@@ -449,6 +464,47 @@ class IssueQuery < Query
     va = value.map {|v| v == '0' ? self.class.connection.quoted_false : self.class.connection.quoted_true}.uniq.join(',')
 
     "#{Issue.table_name}.is_private #{op} (#{va})"
+  end
+
+  def sql_for_parent_id_field(field, operator, value)
+    case operator
+    when "="
+      "#{Issue.table_name}.parent_id = #{value.first.to_i}"
+    when "~"
+      root_id, lft, rgt = Issue.where(:id => value.first.to_i).pluck(:root_id, :lft, :rgt).first
+      if root_id && lft && rgt
+        "#{Issue.table_name}.root_id = #{root_id} AND #{Issue.table_name}.lft > #{lft} AND #{Issue.table_name}.rgt < #{rgt}"
+      else
+        "1=0"
+      end
+    when "!*"
+      "#{Issue.table_name}.parent_id IS NULL"
+    when "*"
+      "#{Issue.table_name}.parent_id IS NOT NULL"
+    end
+  end
+
+  def sql_for_child_id_field(field, operator, value)
+    case operator
+    when "="
+      parent_id = Issue.where(:id => value.first.to_i).pluck(:parent_id).first
+      if parent_id
+        "#{Issue.table_name}.id = #{parent_id}"
+      else
+        "1=0"
+      end
+    when "~"
+      root_id, lft, rgt = Issue.where(:id => value.first.to_i).pluck(:root_id, :lft, :rgt).first
+      if root_id && lft && rgt
+        "#{Issue.table_name}.root_id = #{root_id} AND #{Issue.table_name}.lft < #{lft} AND #{Issue.table_name}.rgt > #{rgt}"
+      else
+        "1=0"
+      end
+    when "!*"
+      "#{Issue.table_name}.rgt - #{Issue.table_name}.lft = 1"
+    when "*"
+      "#{Issue.table_name}.rgt - #{Issue.table_name}.lft > 1"
+    end
   end
 
   def sql_for_relations(field, operator, value, options={})

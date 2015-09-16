@@ -273,7 +273,7 @@ ja:
   field_is_public: 公開
   field_parent: 親プロジェクト名
   field_is_in_roadmap: チケットをロードマップに表示する
-  field_login: ログイン
+  field_login: ログインID
   field_mail_notification: メール通知
   field_admin: システム管理者
   field_last_login_on: 最終接続日
@@ -386,8 +386,8 @@ ja:
   setting_new_project_user_role_id: システム管理者以外のユーザーが作成したプロジェクトに設定するロール
   setting_default_projects_modules: 新規プロジェクトにおいてデフォルトで有効になるモジュール
   setting_issue_done_ratio: 進捗率の算出方法
-  setting_issue_done_ratio_issue_field: チケットのフィールドを使用する
-  setting_issue_done_ratio_issue_status: チケットのステータスを使用する
+  setting_issue_done_ratio_issue_field: チケットのフィールドを使用
+  setting_issue_done_ratio_issue_status: チケットのステータスに連動
   setting_start_of_week: 週の開始曜日
   setting_rest_api_enabled: RESTによるWebサービスを有効にする
   setting_default_notification_option: デフォルトのメール通知オプション
@@ -693,8 +693,8 @@ ja:
   label_feed_plural: フィード
   label_changes_details: 全変更の詳細
   label_issue_tracking: チケットトラッキング
-  label_spent_time: 作業時間の記録
-  label_overall_spent_time: すべての作業時間の記録
+  label_spent_time: 作業時間
+  label_overall_spent_time: すべての作業時間
   label_f_hour: "%{value}時間"
   label_f_hour_plural: "%{value}時間"
   label_time_tracking: 時間トラッキング
@@ -805,7 +805,7 @@ ja:
   label_group: グループ
   label_group_plural: グループ
   label_group_new: 新しいグループ
-  label_time_entry_plural: 作業時間の記録
+  label_time_entry_plural: 作業時間
   label_version_sharing_none: 共有しない
   label_version_sharing_descendants: サブプロジェクト単位
   label_version_sharing_hierarchy: プロジェクト階層単位
@@ -1113,7 +1113,7 @@ ja:
   notice_account_locked: アカウントがロックされています
   label_hidden: 非表示
   label_visibility_private: 自分のみ
-  label_visibility_roles: 以下のロールのみ
+  label_visibility_roles: 次のロールのみ
   label_visibility_public: すべてのユーザー
   field_must_change_passwd: 次回ログイン時にパスワード変更を強制
   notice_new_password_must_be_different: 新しいパスワードは現在のパスワードと異なるものでなければなりません
@@ -1157,3 +1157,17 @@ ja:
   setting_search_results_per_page: ページごとの検索結果表示件数
   label_blank_value: 空
   permission_copy_issues: チケットのコピー
+  error_password_expired: パスワードの有効期限が過ぎたか、システム管理者より変更を求められています。
+  field_time_entries_visibility: 表示できる作業時間
+  setting_password_max_age: パスワードの有効期限
+  label_parent_task_attributes: 親チケットの値の算出方法
+  label_parent_task_attributes_derived: 子チケットの値から算出
+  label_parent_task_attributes_independent: 子チケットから独立
+  label_time_entries_visibility_all: すべての作業時間
+  label_time_entries_visibility_own: 自身が登録した作業時間
+  label_member_management: メンバーの管理
+  label_member_management_all_roles: すべてのロール
+  label_member_management_selected_roles_only: 次のロールのみ
+  label_password_required: この操作を続行するにはパスワードを入力してください
+  label_total_spent_time: 合計作業時間
+  field_total_estimated_hours: 合計予定工数

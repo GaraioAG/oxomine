@@ -113,6 +113,30 @@ module IssuesHelper
     s.html_safe
   end
 
+  def issue_estimated_hours_details(issue)
+    if issue.total_estimated_hours.present?
+      if issue.total_estimated_hours == issue.estimated_hours
+        l_hours_short(issue.estimated_hours)
+      else
+        s = issue.estimated_hours.present? ? l_hours_short(issue.estimated_hours) : ""
+        s << " (#{l(:label_total)}: #{l_hours_short(issue.total_estimated_hours)})"
+        s.html_safe
+      end
+    end
+  end
+
+  def issue_spent_hours_details(issue)
+    if issue.total_spent_hours > 0
+      if issue.total_spent_hours == issue.spent_hours
+        link_to(l_hours_short(issue.spent_hours), issue_time_entries_path(issue))
+      else
+        s = issue.spent_hours > 0 ? l_hours_short(issue.spent_hours) : ""
+        s << " (#{l(:label_total)}: #{link_to l_hours_short(issue.total_spent_hours), issue_time_entries_path(issue)})"
+        s.html_safe
+      end
+    end
+  end
+
   # Returns an array of error messages for bulk edited issues
   def bulk_edit_error_messages(issues)
     messages = {}
@@ -192,7 +216,7 @@ module IssuesHelper
     ordered_values.compact.each do |value|
       css = "cf_#{value.custom_field.id}"
       s << "</tr>\n<tr>\n" if n > 0 && (n % 2) == 0
-      s << "\t<th class=\"#{css}\">#{ h(value.custom_field.name) }:</th><td class=\"#{css}\">#{ h(show_value(value)) }</td>\n"
+      s << "\t<th class=\"#{css}\">#{ custom_field_name_tag(value.custom_field) }:</th><td class=\"#{css}\">#{ h(show_value(value)) }</td>\n"
       n += 1
     end
     s << "</tr>\n"
@@ -225,7 +249,7 @@ module IssuesHelper
     issues = [issues] unless issues.is_a?(Array)
     message = l(:text_issues_destroy_confirmation)
 
-		descendant_count = issues_descendant_count(issues)
+    descendant_count = issues_descendant_count(issues)
     if descendant_count > 0
       message << "\n" + l(:text_issues_destroy_descendants_confirmation, :count => descendant_count)
     end

@@ -105,6 +105,12 @@ module ObjectHelpers
     issue.reload
   end
 
+  def Issue.generate_with_child!(attributes={})
+    issue = Issue.generate!(attributes)
+    Issue.generate!(:parent_issue_id => issue.id)
+    issue.reload
+  end
+
   def Journal.generate!(attributes={})
     journal = Journal.new(attributes)
     journal.user ||= User.first
@@ -119,6 +125,7 @@ module ObjectHelpers
     @generated_version_name.succ!
     version = Version.new(attributes)
     version.name = @generated_version_name.dup if version.name.blank?
+    version.project ||= Project.find(1)
     yield version if block_given?
     version.save!
     version

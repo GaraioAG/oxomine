@@ -217,6 +217,7 @@ function buildFilterRow(field, operator, values) {
     break;
   case "integer":
   case "float":
+  case "tree":
     tr.find('td.values').append(
       '<span style="display:none;"><input type="text" name="v['+field+'][]" id="values_'+fieldId+'_1" size="6" class="value" /></span>' +
       ' <span style="display:none;"><input type="text" name="v['+field+'][]" id="values_'+fieldId+'_2" size="6" class="value" /></span>'
@@ -382,12 +383,16 @@ function showModal(id, width, title) {
   var el = $('#'+id).first();
   if (el.length === 0 || el.is(':visible')) {return;}
   if (!title) title = el.find('h3.title').text();
+  // moves existing modals behind the transparent background
+  $(".modal").zIndex(99);
   el.dialog({
     width: width,
     modal: true,
     resizable: false,
     dialogClass: 'modal',
     title: title
+  }).on('dialogclose', function(){
+    $(".modal").zIndex(101);
   });
   el.find("input[type=text], input[type=submit]").first().focus();
 }
@@ -471,7 +476,7 @@ function updateIssueFrom(url) {
   $('#all_attributes input, #all_attributes textarea, #all_attributes select').each(function(){
     $(this).data('valuebeforeupdate', $(this).val());
   });
-  $.ajax({
+  return $.ajax({
     url: url,
     type: 'post',
     data: $('#issue-form').serialize()

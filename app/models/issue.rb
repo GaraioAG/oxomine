@@ -206,6 +206,8 @@ class Issue < ActiveRecord::Base
     @assignable_versions = nil
     @relations = nil
     @spent_hours = nil
+    @total_spent_hours = nil
+    @total_estimated_hours = nil
     base_reload(*args)
   end
 
@@ -293,7 +295,7 @@ class Issue < ActiveRecord::Base
   # * or if the status was not part of the new tracker statuses
   # * or the status was nil
   def tracker=(tracker)
-    if tracker != self.tracker 
+    if tracker != self.tracker
       if status == default_status
         self.status = nil
       elsif status && tracker && !tracker.issue_status_ids.include?(status.id)
@@ -423,8 +425,17 @@ class Issue < ActiveRecord::Base
     names -= disabled_core_fields
     names -= read_only_attribute_names(user)
     if new_record?
-     	# Make sure that project_id can always be set for new issues
+      # Make sure that project_id can always be set for new issues
       names |= %w(project_id)
+    end
+    if dates_derived?
+      names -= %w(start_date due_date)
+    end
+    if priority_derived?
+      names -= %w(priority_id)
+    end
+    if done_ratio_derived?
+      names -= %w(done_ratio)
     end
     names
   end
@@ -462,10 +473,6 @@ class Issue < ActiveRecord::Base
 
     attrs = delete_unsafe_attributes(attrs, user)
     return if attrs.empty?
-
-    unless leaf?
-      attrs.reject! {|k,v| %w(priority_id done_ratio start_date due_date estimated_hours).include?(k)}
-    end
 
     if attrs['parent_issue_id'].present?
       s = attrs['parent_issue_id'].to_s
@@ -657,6 +664,17 @@ class Issue < ActiveRecord::Base
           errors.add attribute, :blank
         end
       end
+    end
+  end
+
+  # Overrides Redmine::Acts::Customizable::InstanceMethods#validate_custom_field_values
+  # so that custom values that are not editable are not validated (eg. a custom field that
+  # is marked as required should not trigger a validation error if the user is not allowed
+  # to edit this field).
+  def validate_custom_field_values
+    user = new_record? ? author : current_journal.try(:user)
+    if new_record? || custom_field_values_changed?
+      editable_custom_field_values(user).each(&:validate_value)
     end
   end
 
@@ -899,15 +917,20 @@ class Issue < ActiveRecord::Base
   end
 
   # Returns the total number of hours spent on this issue and its descendants
-  #
-  # Example:
-  #   spent_hours => 0.0
-  #   spent_hours => 50.2
   def total_spent_hours
-    @total_spent_hours ||=
-      self_and_descendants.
-        joins("LEFT JOIN #{TimeEntry.table_name} ON #{TimeEntry.table_name}.issue_id = #{Issue.table_name}.id").
-        sum("#{TimeEntry.table_name}.hours").to_f || 0.0
+    @total_spent_hours ||= if leaf?
+      spent_hours
+    else
+      self_and_descendants.joins(:time_entries).sum("#{TimeEntry.table_name}.hours").to_f || 0.0
+    end
+  end
+
+  def total_estimated_hours
+    if leaf?
+      estimated_hours
+    else
+      @total_estimated_hours ||= self_and_descendants.sum(:estimated_hours)
+    end
   end
 
   def relations
@@ -927,9 +950,22 @@ class Issue < ActiveRecord::Base
   # Preloads visible spent time for a collection of issues
   def self.load_visible_spent_hours(issues, user=User.current)
     if issues.any?
-      hours_by_issue_id = TimeEntry.visible(user).group(:issue_id).sum(:hours)
+      hours_by_issue_id = TimeEntry.visible(user).where(:issue_id => issues.map(&:id)).group(:issue_id).sum(:hours)
       issues.each do |issue|
         issue.instance_variable_set "@spent_hours", (hours_by_issue_id[issue.id] || 0)
+      end
+    end
+  end
+
+  # Preloads visible total spent time for a collection of issues
+  def self.load_visible_total_spent_hours(issues, user=User.current)
+    if issues.any?
+      hours_by_issue_id = TimeEntry.visible(user).joins(:issue).
+        joins("JOIN #{Issue.table_name} parent ON parent.root_id = #{Issue.table_name}.root_id" +
+          " AND parent.lft <= #{Issue.table_name}.lft AND parent.rgt >= #{Issue.table_name}.rgt").
+        where("parent.id IN (?)", issues.map(&:id)).group("parent.id").sum(:hours)
+      issues.each do |issue|
+        issue.instance_variable_set "@total_spent_hours", (hours_by_issue_id[issue.id] || 0)
       end
     end
   end
@@ -1083,11 +1119,15 @@ class Issue < ActiveRecord::Base
   end
 
   def soonest_start(reload=false)
-    @soonest_start = nil if reload
-    @soonest_start ||= (
-        relations_to(reload).collect{|relation| relation.successor_soonest_start} +
-        [(@parent_issue || parent).try(:soonest_start)]
-      ).compact.max
+    if @soonest_start.nil? || reload
+      dates = relations_to(reload).collect{|relation| relation.successor_soonest_start}
+      p = @parent_issue || parent
+      if p && Setting.parent_issue_dates == 'derived'
+        dates << p.soonest_start
+      end
+      @soonest_start = dates.compact.max
+    end
+    @soonest_start
   end
 
   # Sets start_date on the given date or the next working day
@@ -1103,7 +1143,7 @@ class Issue < ActiveRecord::Base
   # If the issue is a parent task, this is done by rescheduling its subtasks.
   def reschedule_on!(date)
     return if date.nil?
-    if leaf?
+    if leaf? || !dates_derived?
       if start_date.nil? || start_date != date
         if start_date && start_date > date
           # Issue can not be moved earlier than its soonest start date
@@ -1131,6 +1171,18 @@ class Issue < ActiveRecord::Base
         end
       end
     end
+  end
+
+  def dates_derived?
+    !leaf? && Setting.parent_issue_dates == 'derived'
+  end
+
+  def priority_derived?
+    !leaf? && Setting.parent_issue_priority == 'derived'
+  end
+
+  def done_ratio_derived?
+    !leaf? && Setting.parent_issue_done_ratio == 'derived'
   end
 
   def <=>(issue)
@@ -1419,37 +1471,39 @@ class Issue < ActiveRecord::Base
 
   def recalculate_attributes_for(issue_id)
     if issue_id && p = Issue.find_by_id(issue_id)
-      # priority = highest priority of children
-      if priority_position = p.children.joins(:priority).maximum("#{IssuePriority.table_name}.position")
-        p.priority = IssuePriority.find_by_position(priority_position)
-      end
-
-      # start/due dates = lowest/highest dates of children
-      p.start_date = p.children.minimum(:start_date)
-      p.due_date = p.children.maximum(:due_date)
-      if p.start_date && p.due_date && p.due_date < p.start_date
-        p.start_date, p.due_date = p.due_date, p.start_date
-      end
-
-      # done ratio = weighted average ratio of leaves
-      unless Issue.use_status_for_done_ratio? && p.status && p.status.default_done_ratio
-        leaves_count = p.leaves.count
-        if leaves_count > 0
-          average = p.leaves.where("estimated_hours > 0").average(:estimated_hours).to_f
-          if average == 0
-            average = 1
-          end
-          done = p.leaves.joins(:status).
-            sum("COALESCE(CASE WHEN estimated_hours > 0 THEN estimated_hours ELSE NULL END, #{average}) " +
-                "* (CASE WHEN is_closed = #{self.class.connection.quoted_true} THEN 100 ELSE COALESCE(done_ratio, 0) END)").to_f
-          progress = done / (average * leaves_count)
-          p.done_ratio = progress.round
+      if p.priority_derived?
+        # priority = highest priority of children
+        if priority_position = p.children.joins(:priority).maximum("#{IssuePriority.table_name}.position")
+          p.priority = IssuePriority.find_by_position(priority_position)
         end
       end
 
-      # estimate = sum of leaves estimates
-      p.estimated_hours = p.leaves.sum(:estimated_hours).to_f
-      p.estimated_hours = nil if p.estimated_hours == 0.0
+      if p.dates_derived?
+        # start/due dates = lowest/highest dates of children
+        p.start_date = p.children.minimum(:start_date)
+        p.due_date = p.children.maximum(:due_date)
+        if p.start_date && p.due_date && p.due_date < p.start_date
+          p.start_date, p.due_date = p.due_date, p.start_date
+        end
+      end
+
+      if p.done_ratio_derived?
+        # done ratio = weighted average ratio of leaves
+        unless Issue.use_status_for_done_ratio? && p.status && p.status.default_done_ratio
+          leaves_count = p.leaves.count
+          if leaves_count > 0
+            average = p.leaves.where("estimated_hours > 0").average(:estimated_hours).to_f
+            if average == 0
+              average = 1
+            end
+            done = p.leaves.joins(:status).
+              sum("COALESCE(CASE WHEN estimated_hours > 0 THEN estimated_hours ELSE NULL END, #{average}) " +
+                  "* (CASE WHEN is_closed = #{self.class.connection.quoted_true} THEN 100 ELSE COALESCE(done_ratio, 0) END)").to_f
+            progress = done / (average * leaves_count)
+            p.done_ratio = progress.round
+          end
+        end
+      end
 
       # ancestors will be recursively updated
       p.save(:validate => false)

@@ -24,7 +24,7 @@ module QueriesHelper
     ungrouped = []
     grouped = {}
     query.available_filters.map do |field, field_options|
-      if field_options[:type] == :relation
+      if [:tree, :relation].include?(field_options[:type]) 
         group = :label_related_issues
       elsif field =~ /^(.+)\./
         # association filters
@@ -162,7 +162,6 @@ module QueriesHelper
   end
 
   def query_to_csv(items, query, options={})
-    encoding = l(:general_csv_encoding)
     columns = (options[:columns] == 'all' ? query.available_inline_columns : query.inline_columns)
     query.available_block_columns.each do |column|
       if options[column.name].present?
@@ -170,15 +169,14 @@ module QueriesHelper
       end
     end
 
-    export = CSV.generate(:col_sep => l(:general_csv_separator)) do |csv|
+    Redmine::Export::CSV.generate do |csv|
       # csv header fields
-      csv << columns.collect {|c| Redmine::CodesetUtil.from_utf8(c.caption.to_s, encoding) }
+      csv << columns.map {|c| c.caption.to_s}
       # csv lines
       items.each do |item|
-        csv << columns.collect {|c| Redmine::CodesetUtil.from_utf8(csv_content(c, item), encoding) }
+        csv << columns.map {|c| csv_content(c, item)}
       end
     end
-    export
   end
 
   # Retrieve query from session or build a new query

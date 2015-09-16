@@ -66,12 +66,13 @@ class AccountTest < Redmine::IntegrationTest
     Redmine::Configuration.stubs(:[]).with('autologin_cookie_name').returns('custom_autologin')
     Redmine::Configuration.stubs(:[]).with('autologin_cookie_path').returns('/')
     Redmine::Configuration.stubs(:[]).with('autologin_cookie_secure').returns(false)
+    Redmine::Configuration.stubs(:[]).with('sudo_mode_timeout').returns(15)
 
     with_settings :autologin => '7' do
       assert_difference 'Token.count' do
         post '/login', :username => 'admin', :password => 'admin', :autologin => 1
+        assert_response 302
       end
-      assert_response 302
       assert cookies['custom_autologin'].present?
       token = cookies['custom_autologin']
 
@@ -148,6 +149,40 @@ class AccountTest < Redmine::IntegrationTest
     assert_response :success
 
     assert_equal false, User.find_by_login('jsmith').must_change_passwd?
+  end
+
+  def test_user_with_expired_password_should_be_forced_to_change_its_password
+    User.find_by_login('jsmith').update_attribute :passwd_changed_on, 14.days.ago
+
+    with_settings :password_max_age => 7 do
+      post '/login', :username => 'jsmith', :password => 'jsmith'
+      assert_redirected_to '/my/page'
+      follow_redirect!
+      assert_redirected_to '/my/password'
+
+      get '/issues'
+      assert_redirected_to '/my/password'
+    end
+  end
+
+  def test_user_with_expired_password_should_be_able_to_change_its_password
+    User.find_by_login('jsmith').update_attribute :passwd_changed_on, 14.days.ago
+
+    with_settings :password_max_age => 7 do
+      post '/login', :username => 'jsmith', :password => 'jsmith'
+      assert_redirected_to '/my/page'
+      follow_redirect!
+      assert_redirected_to '/my/password'
+      follow_redirect!
+      assert_response :success
+      post '/my/password', :password => 'jsmith', :new_password => 'newpassword', :new_password_confirmation => 'newpassword'
+      assert_redirected_to '/my/account'
+      follow_redirect!
+      assert_response :success
+
+      assert_equal false, User.find_by_login('jsmith').must_change_passwd?
+    end
+
   end
 
   def test_register_with_automatic_activation

@@ -67,6 +67,7 @@ Rails.application.routes.draw do
   match 'my', :controller => 'my', :action => 'index', :via => :get # Redirects to my/page
   match 'my/reset_rss_key', :controller => 'my', :action => 'reset_rss_key', :via => :post
   match 'my/reset_api_key', :controller => 'my', :action => 'reset_api_key', :via => :post
+  match 'my/api_key', :controller => 'my', :action => 'show_api_key', :via => :get
   match 'my/password', :controller => 'my', :action => 'password', :via => [:get, :post]
   match 'my/page_layout', :controller => 'my', :action => 'page_layout', :via => :get
   match 'my/add_block', :controller => 'my', :action => 'add_block', :via => :post
@@ -215,6 +216,8 @@ Rails.application.routes.draw do
   match '/time_entries/:id', :to => 'timelog#destroy', :via => :delete, :id => /\d+/
   # TODO: delete /time_entries for bulk deletion
   match '/time_entries/destroy', :to => 'timelog#destroy', :via => :delete
+  # Used to update the new time entry form
+  post '/time_entries/new', :to => 'timelog#new'
 
   get 'projects/:id/activity', :to => 'activities#index', :as => :project_activity
   get 'activity', :to => 'activities#index'
@@ -313,7 +316,9 @@ Rails.application.routes.draw do
   get 'projects/:id/search', :controller => 'search', :action => 'index'
   get 'search', :controller => 'search', :action => 'index'
 
-  match 'mail_handler', :controller => 'mail_handler', :action => 'index', :via => :post
+
+  get  'mail_handler', :to => 'mail_handler#new'
+  post 'mail_handler', :to => 'mail_handler#index'
 
   match 'admin', :controller => 'admin', :action => 'index', :via => :get
   match 'admin/projects', :controller => 'admin', :action => 'projects', :via => :get

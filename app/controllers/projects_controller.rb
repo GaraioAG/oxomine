@@ -25,6 +25,7 @@ class ProjectsController < ApplicationController
   before_filter :require_admin, :only => [ :copy, :archive, :unarchive, :destroy ]
   accept_rss_auth :index
   accept_api_auth :index, :show, :create, :update, :destroy
+  require_sudo_mode :destroy
 
   after_filter :only => [:create, :edit, :update, :archive, :unarchive, :destroy] do |controller|
     if controller.request.post?
@@ -143,7 +144,7 @@ class ProjectsController < ApplicationController
     @open_issues_by_tracker = Issue.visible.open.where(cond).group(:tracker).count
     @total_issues_by_tracker = Issue.visible.where(cond).group(:tracker).count
 
-    if User.current.allowed_to?(:view_time_entries, @project)
+    if User.current.allowed_to_view_all_time_entries?(@project)
       @total_hours = TimeEntry.visible.where(cond).sum(:hours).to_f
     end
 

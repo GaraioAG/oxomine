@@ -273,6 +273,22 @@ class IssuesControllerTest < ActionController::TestCase
     assert_not_nil assigns(:issue_count_by_group)
   end
 
+  def test_index_with_query_grouped_and_sorted_by_fixed_version
+    get :index, :project_id => 1, :set_filter => 1, :group_by => "fixed_version", :sort => "fixed_version"
+    assert_response :success
+    assert_template 'index'
+    assert_not_nil assigns(:issues)
+    assert_not_nil assigns(:issue_count_by_group)
+  end
+
+  def test_index_with_query_grouped_and_sorted_by_fixed_version_in_reverse_order
+    get :index, :project_id => 1, :set_filter => 1, :group_by => "fixed_version", :sort => "fixed_version:desc"
+    assert_response :success
+    assert_template 'index'
+    assert_not_nil assigns(:issues)
+    assert_not_nil assigns(:issue_count_by_group)
+  end
+
   def test_index_with_query_grouped_by_list_custom_field
     get :index, :project_id => 1, :query_id => 9
     assert_response :success
@@ -2982,6 +2998,24 @@ class IssuesControllerTest < ActionController::TestCase
     assert_equal issue.descendants.map(&:subject).sort, copy.descendants.map(&:subject).sort
   end
 
+  def test_create_as_copy_to_a_different_project_should_copy_subtask_custom_fields
+    issue = Issue.generate! {|i| i.custom_field_values = {'2' => 'Foo'}}
+    child = Issue.generate!(:parent_issue_id => issue.id) {|i| i.custom_field_values = {'2' => 'Bar'}}
+    @request.session[:user_id] = 1
+
+    assert_difference 'Issue.count', 2 do
+      post :create, :project_id => 'ecookbook', :copy_from => issue.id,
+        :issue => {:project_id => '2', :tracker_id => 1, :status_id => '1',
+                   :subject => 'Copy with subtasks', :custom_field_values => {'2' => 'Foo'}},
+        :copy_subtasks => '1'
+    end
+
+    child_copy, issue_copy = Issue.order(:id => :desc).limit(2).to_a
+    assert_equal 2, issue_copy.project_id
+    assert_equal 'Foo', issue_copy.custom_field_value(2)
+    assert_equal 'Bar', child_copy.custom_field_value(2)
+  end
+
   def test_create_as_copy_without_copy_subtasks_option_should_not_copy_subtasks
     @request.session[:user_id] = 2
     issue = Issue.generate_with_descendants!
@@ -3998,6 +4032,15 @@ class IssuesControllerTest < ActionController::TestCase
     assert_equal parent.id, Issue.find(1).parent_id
     assert_equal parent.id, Issue.find(3).parent_id
     assert_equal [1, 3], parent.children.collect(&:id).sort
+  end
+
+  def test_bulk_update_estimated_hours
+    @request.session[:user_id] = 2
+    post :bulk_update, :ids => [1, 2], :issue => {:estimated_hours => 4.25}
+
+    assert_redirected_to :controller => 'issues', :action => 'index', :project_id => 'ecookbook'
+    assert_equal 4.25, Issue.find(1).estimated_hours
+    assert_equal 4.25, Issue.find(2).estimated_hours
   end
 
   def test_bulk_update_custom_field

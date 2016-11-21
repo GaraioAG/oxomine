@@ -78,7 +78,7 @@ class IssueSubtaskingTest < ActiveSupport::TestCase
     end
   end
 
-  def test_parent_priority_should_be_the_highest_child_priority
+  def test_parent_priority_should_be_the_highest_open_child_priority
     with_settings :parent_issue_priority => 'derived' do
       parent = Issue.generate!(:priority => IssuePriority.find_by_name('Normal'))
       # Create children
@@ -88,14 +88,47 @@ class IssueSubtaskingTest < ActiveSupport::TestCase
       assert_equal 'Immediate', child1.reload.priority.name
       assert_equal 'Immediate', parent.reload.priority.name
       child3 = parent.generate_child!(:priority => IssuePriority.find_by_name('Low'))
+      child4 = parent.generate_child!(:priority => IssuePriority.find_by_name('Urgent'))
       assert_equal 'Immediate', parent.reload.priority.name
       # Destroy a child
       child1.destroy
+      assert_equal 'Urgent', parent.reload.priority.name
+      # Close a child
+      child4.status = IssueStatus.where(:is_closed => true).first
+      child4.save!
       assert_equal 'Low', parent.reload.priority.name
       # Update a child
       child3.reload.priority = IssuePriority.find_by_name('Normal')
       child3.save!
       assert_equal 'Normal', parent.reload.priority.name
+      # Reopen a child
+      child4.status = IssueStatus.where(:is_closed => false).first
+      child4.save!
+      assert_equal 'Urgent', parent.reload.priority.name
+    end
+  end
+
+  def test_parent_priority_should_be_set_to_default_when_all_children_are_closed
+    with_settings :parent_issue_priority => 'derived' do
+      parent = Issue.generate!
+      child = parent.generate_child!(:priority => IssuePriority.find_by_name('High'))
+      assert_equal 'High', parent.reload.priority.name
+      child.status = IssueStatus.where(:is_closed => true).first
+      child.save!
+      assert_equal 'Normal', parent.reload.priority.name
+    end
+  end
+
+  def test_parent_priority_should_be_left_unchanged_when_all_children_are_closed_and_no_default_priority
+    IssuePriority.update_all :is_default => false
+
+    with_settings :parent_issue_priority => 'derived' do
+      parent = Issue.generate!(:priority => IssuePriority.find_by_name('Normal'))
+      child = parent.generate_child!(:priority => IssuePriority.find_by_name('High'))
+      assert_equal 'High', parent.reload.priority.name
+      child.status = IssueStatus.where(:is_closed => true).first
+      child.save!
+      assert_equal 'High', parent.reload.priority.name
     end
   end
 

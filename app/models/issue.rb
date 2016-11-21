@@ -54,7 +54,7 @@ class Issue < ActiveRecord::Base
                 :url => Proc.new {|o| {:controller => 'issues', :action => 'show', :id => o.id}},
                 :type => Proc.new {|o| 'issue' + (o.closed? ? ' closed' : '') }
 
-  acts_as_activity_provider :scope => preload(:project, :author, :tracker),
+  acts_as_activity_provider :scope => preload(:project, :author, :tracker, :status),
                             :author_key => :author_id
 
   DONE_RATIO_OPTIONS = %w(issue_field issue_status)
@@ -120,10 +120,10 @@ class Issue < ActiveRecord::Base
   # Returns a SQL conditions string used to find all issues visible by the specified user
   def self.visible_condition(user, options={})
     Project.allowed_to_condition(user, :view_issues, options) do |role, user|
-      if user.id && user.logged?
+      sql = if user.id && user.logged?
         case role.issues_visibility
         when 'all'
-          nil
+          '1=1'
         when 'default'
           user_ids = [user.id] + user.groups.map(&:id).compact
           "(#{table_name}.is_private = #{connection.quoted_false} OR #{table_name}.author_id = #{user.id} OR #{table_name}.assigned_to_id IN (#{user_ids.join(',')}))"
@@ -136,13 +136,22 @@ class Issue < ActiveRecord::Base
       else
         "(#{table_name}.is_private = #{connection.quoted_false})"
       end
+      unless role.permissions_all_trackers?(:view_issues)
+        tracker_ids = role.permissions_tracker_ids(:view_issues)
+        if tracker_ids.any?
+          sql = "(#{sql} AND #{table_name}.tracker_id IN (#{tracker_ids.join(',')}))"
+        else
+          sql = '1=0'
+        end
+      end
+      sql
     end
   end
 
   # Returns true if usr or current user is allowed to view the issue
   def visible?(usr=nil)
     (usr || User.current).allowed_to?(:view_issues, self.project) do |role, user|
-      if user.logged?
+      visible = if user.logged?
         case role.issues_visibility
         when 'all'
           true
@@ -156,17 +165,36 @@ class Issue < ActiveRecord::Base
       else
         !self.is_private?
       end
+      unless role.permissions_all_trackers?(:view_issues)
+        visible &&= role.permissions_tracker_ids?(:view_issues, tracker_id)
+      end
+      visible
     end
   end
 
-  # Returns true if user or current user is allowed to edit or add a note to the issue
+  # Returns true if user or current user is allowed to edit or add notes to the issue
   def editable?(user=User.current)
-    attributes_editable?(user) || user.allowed_to?(:add_issue_notes, project)
+    attributes_editable?(user) || notes_addable?(user)
   end
 
   # Returns true if user or current user is allowed to edit the issue
   def attributes_editable?(user=User.current)
-    user.allowed_to?(:edit_issues, project)
+    user_tracker_permission?(user, :edit_issues)
+  end
+
+  # Overrides Redmine::Acts::Attachable::InstanceMethods#attachments_editable?
+  def attachments_editable?(user=User.current)
+    attributes_editable?(user)
+  end
+
+  # Returns true if user or current user is allowed to add notes to the issue
+  def notes_addable?(user=User.current)
+    user_tracker_permission?(user, :add_issue_notes)
+  end
+
+  # Returns true if user or current user is allowed to delete the issue
+  def deletable?(user=User.current)
+    user_tracker_permission?(user, :delete_issues)
   end
 
   def initialize(attributes=nil, *args)
@@ -233,7 +261,7 @@ class Issue < ActiveRecord::Base
   # Copies attributes from another issue, arg can be an id or an Issue
   def copy_from(arg, options={})
     issue = arg.is_a?(Issue) ? arg : Issue.visible.find(arg)
-    self.attributes = issue.attributes.dup.except("id", "root_id", "parent_id", "lft", "rgt", "created_on", "updated_on")
+    self.attributes = issue.attributes.dup.except("id", "root_id", "parent_id", "lft", "rgt", "created_on", "updated_on", "closed_on")
     self.custom_field_values = issue.custom_field_values.inject({}) {|h,v| h[v.custom_field_id] = v.value; h}
     self.status = issue.status
     self.author = User.current
@@ -416,10 +444,10 @@ class Issue < ActiveRecord::Base
     'custom_fields',
     'lock_version',
     'notes',
-    :if => lambda {|issue, user| issue.new_record? || user.allowed_to?(:edit_issues, issue.project) }
+    :if => lambda {|issue, user| issue.new_record? || issue.attributes_editable?(user) }
 
   safe_attributes 'notes',
-    :if => lambda {|issue, user| user.allowed_to?(:add_issue_notes, issue.project)}
+    :if => lambda {|issue, user| issue.notes_addable?(user)}
 
   safe_attributes 'private_notes',
     :if => lambda {|issue, user| !issue.new_record? && user.allowed_to?(:set_notes_private, issue.project)}
@@ -434,7 +462,7 @@ class Issue < ActiveRecord::Base
     }
 
   safe_attributes 'parent_issue_id',
-    :if => lambda {|issue, user| (issue.new_record? || user.allowed_to?(:edit_issues, issue.project)) &&
+    :if => lambda {|issue, user| (issue.new_record? || issue.attributes_editable?(user)) &&
       user.allowed_to?(:manage_subtasks, issue.project)}
 
   def safe_attribute_names(user=nil)
@@ -468,8 +496,13 @@ class Issue < ActiveRecord::Base
 
     # Project and Tracker must be set before since new_statuses_allowed_to depends on it.
     if (p = attrs.delete('project_id')) && safe_attribute?('project_id')
-      if allowed_target_projects(user).where(:id => p.to_i).exists?
-        self.project_id = p
+      if p.is_a?(String) && !p.match(/^\d*$/)
+        p_id = Project.find_by_identifier(p).try(:id)
+      else
+        p_id = p.to_i
+      end
+      if allowed_target_projects(user).where(:id => p_id).exists?
+        self.project_id = p_id
       end
 
       if project_id_changed? && attrs['category_id'].to_s == category_id_was.to_s
@@ -479,12 +512,14 @@ class Issue < ActiveRecord::Base
     end
 
     if (t = attrs.delete('tracker_id')) && safe_attribute?('tracker_id')
-      self.tracker_id = t
+      if allowed_target_trackers(user).where(:id => t.to_i).exists?
+        self.tracker_id = t
+      end
     end
     if project
-      # Set the default tracker to accept custom field values
+      # Set a default tracker to accept custom field values
       # even if tracker is not specified
-      self.tracker ||= project.trackers.first
+      self.tracker ||= allowed_target_trackers(user).first
     end
 
     statuses_allowed = new_statuses_allowed_to(user)
@@ -538,8 +573,9 @@ class Issue < ActiveRecord::Base
 
   # Returns the custom_field_values that can be edited by the given user
   def editable_custom_field_values(user=nil)
+    read_only = read_only_attribute_names(user)
     visible_custom_field_values(user).reject do |value|
-      read_only_attribute_names(user).include?(value.custom_field_id.to_s)
+      read_only.include?(value.custom_field_id.to_s)
     end
   end
 
@@ -661,7 +697,7 @@ class Issue < ActiveRecord::Base
 
     # Checks that the issue can not be added/moved to a disabled tracker
     if project && (tracker_id_changed? || project_id_changed?)
-      unless project.trackers.include?(tracker)
+      if tracker && !project.trackers.include?(tracker)
         errors.add :tracker_id, :inclusion
       end
     end
@@ -672,7 +708,10 @@ class Issue < ActiveRecord::Base
     elsif @parent_issue
       if !valid_parent_project?(@parent_issue)
         errors.add :parent_issue_id, :invalid
-      elsif (@parent_issue != parent) && (all_dependent_issues.include?(@parent_issue) || @parent_issue.all_dependent_issues.include?(self))
+      elsif (@parent_issue != parent) && (
+          self.would_reschedule?(@parent_issue) ||
+          @parent_issue.self_and_ancestors.any? {|a| a.relations_from.any? {|r| r.relation_type == IssueRelation::TYPE_PRECEDES && r.issue_to.would_reschedule?(self)}}
+        )
         errors.add :parent_issue_id, :invalid
       elsif !new_record?
         # moving an existing issue
@@ -804,14 +843,14 @@ class Issue < ActiveRecord::Base
 
   # Returns true if the issue is overdue
   def overdue?
-    due_date.present? && (due_date < Date.today) && !closed?
+    due_date.present? && (due_date < User.current.today) && !closed?
   end
 
   # Is the amount of work done less than it should for the due date
   def behind_schedule?
     return false if start_date.nil? || due_date.nil?
     done_date = start_date + ((due_date - start_date + 1) * done_ratio / 100).floor
-    return done_date <= Date.today
+    return done_date <= User.current.today
   end
 
   # Does this issue have children?
@@ -821,7 +860,7 @@ class Issue < ActiveRecord::Base
 
   # Users the issue can be assigned to
   def assignable_users
-    users = project.assignable_users.to_a
+    users = project.assignable_users(tracker).to_a
     users << author if author && author.active?
     users << assigned_to if assigned_to
     users.uniq.sort
@@ -1047,101 +1086,38 @@ class Issue < ActiveRecord::Base
     IssueRelation.where("issue_to_id = ? OR issue_from_id = ?", id, id).find(relation_id)
   end
 
-  # Returns all the other issues that depend on the issue
-  # The algorithm is a modified breadth first search (bfs)
-  def all_dependent_issues(except=[])
-    # The found dependencies
-    dependencies = []
+  # Returns true if this issue blocks the other issue, otherwise returns false
+  def blocks?(other)
+    all = [self]
+    last = [self]
+    while last.any?
+      current = last.map {|i| i.relations_from.where(:relation_type => IssueRelation::TYPE_BLOCKS).map(&:issue_to)}.flatten.uniq
+      current -= last
+      current -= all
+      return true if current.include?(other)
+      last = current
+      all += last
+    end
+    false
+  end
 
-    # The visited flag for every node (issue) used by the breadth first search
-    eNOT_DISCOVERED         = 0       # The issue is "new" to the algorithm, it has not seen it before.
-
-    ePROCESS_ALL            = 1       # The issue is added to the queue. Process both children and relations of
-                                      # the issue when it is processed.
-
-    ePROCESS_RELATIONS_ONLY = 2       # The issue was added to the queue and will be output as dependent issue,
-                                      # but its children will not be added to the queue when it is processed.
-
-    eRELATIONS_PROCESSED    = 3       # The related issues, the parent issue and the issue itself have been added to
-                                      # the queue, but its children have not been added.
-
-    ePROCESS_CHILDREN_ONLY  = 4       # The relations and the parent of the issue have been added to the queue, but
-                                      # the children still need to be processed.
-
-    eALL_PROCESSED          = 5       # The issue and all its children, its parent and its related issues have been
-                                      # added as dependent issues. It needs no further processing.
-
-    issue_status = Hash.new(eNOT_DISCOVERED)
-
-    # The queue
-    queue = []
-
-    # Initialize the bfs, add start node (self) to the queue
-    queue << self
-    issue_status[self] = ePROCESS_ALL
-
-    while (!queue.empty?) do
-      current_issue = queue.shift
-      current_issue_status = issue_status[current_issue]
-      dependencies << current_issue
-
-      # Add parent to queue, if not already in it.
-      parent = current_issue.parent
-      parent_status = issue_status[parent]
-
-      if parent && (parent_status == eNOT_DISCOVERED) && !except.include?(parent)
-        queue << parent
-        issue_status[parent] = ePROCESS_RELATIONS_ONLY
-      end
-
-      # Add children to queue, but only if they are not already in it and
-      # the children of the current node need to be processed.
-      if (current_issue_status == ePROCESS_CHILDREN_ONLY || current_issue_status == ePROCESS_ALL)
-        current_issue.children.each do |child|
-          next if except.include?(child)
-
-          if (issue_status[child] == eNOT_DISCOVERED)
-            queue << child
-            issue_status[child] = ePROCESS_ALL
-          elsif (issue_status[child] == eRELATIONS_PROCESSED)
-            queue << child
-            issue_status[child] = ePROCESS_CHILDREN_ONLY
-          elsif (issue_status[child] == ePROCESS_RELATIONS_ONLY)
-            queue << child
-            issue_status[child] = ePROCESS_ALL
-          end
-        end
-      end
-
-      # Add related issues to the queue, if they are not already in it.
-      current_issue.relations_from.map(&:issue_to).each do |related_issue|
-        next if except.include?(related_issue)
-
-        if (issue_status[related_issue] == eNOT_DISCOVERED)
-          queue << related_issue
-          issue_status[related_issue] = ePROCESS_ALL
-        elsif (issue_status[related_issue] == eRELATIONS_PROCESSED)
-          queue << related_issue
-          issue_status[related_issue] = ePROCESS_CHILDREN_ONLY
-        elsif (issue_status[related_issue] == ePROCESS_RELATIONS_ONLY)
-          queue << related_issue
-          issue_status[related_issue] = ePROCESS_ALL
-        end
-      end
-
-      # Set new status for current issue
-      if (current_issue_status == ePROCESS_ALL) || (current_issue_status == ePROCESS_CHILDREN_ONLY)
-        issue_status[current_issue] = eALL_PROCESSED
-      elsif (current_issue_status == ePROCESS_RELATIONS_ONLY)
-        issue_status[current_issue] = eRELATIONS_PROCESSED
-      end
-    end # while
-
-    # Remove the issues from the "except" parameter from the result array
-    dependencies -= except
-    dependencies.delete(self)
-
-    dependencies
+  # Returns true if the other issue might be rescheduled if the start/due dates of this issue change
+  def would_reschedule?(other)
+    all = [self]
+    last = [self]
+    while last.any?
+      current = last.map {|i|
+        i.relations_from.where(:relation_type => IssueRelation::TYPE_PRECEDES).map(&:issue_to) +
+        i.leaves.to_a +
+        i.ancestors.map {|a| a.relations_from.where(:relation_type => IssueRelation::TYPE_PRECEDES).map(&:issue_to)}
+      }.flatten.uniq
+      current -= last
+      current -= all
+      return true if current.include?(other)
+      last = current
+      all += last
+    end
+    false
   end
 
   # Returns an array of issues that duplicate this one
@@ -1424,7 +1400,46 @@ class Issue < ActiveRecord::Base
     Project.where(condition).having_trackers
   end
 
+  # Returns a scope of trackers that user can assign the issue to
+  def allowed_target_trackers(user=User.current)
+    self.class.allowed_target_trackers(project, user, tracker_id_was)
+  end
+
+  # Returns a scope of trackers that user can assign project issues to
+  def self.allowed_target_trackers(project, user=User.current, current_tracker=nil)
+    if project
+      scope = project.trackers.sorted
+      unless user.admin?
+        roles = user.roles_for_project(project).select {|r| r.has_permission?(:add_issues)}
+        unless roles.any? {|r| r.permissions_all_trackers?(:add_issues)}
+          tracker_ids = roles.map {|r| r.permissions_tracker_ids(:add_issues)}.flatten.uniq
+          if current_tracker
+            tracker_ids << current_tracker
+          end
+          scope = scope.where(:id => tracker_ids)
+        end
+      end
+      scope
+    else
+      Tracker.none
+    end
+  end
+
   private
+
+  def user_tracker_permission?(user, permission)
+    if project && !project.active?
+      perm = Redmine::AccessControl.permission(permission)
+      return false unless perm && perm.read?
+    end
+
+    if user.admin?
+      true
+    else
+      roles = user.roles_for_project(project).select {|r| r.has_permission?(permission)}
+      roles.any? {|r| r.permissions_all_trackers?(permission) || r.permissions_tracker_ids?(permission, tracker_id)}
+    end
+  end
 
   def after_project_change
     # Update project_id on related time entries
@@ -1523,9 +1538,12 @@ class Issue < ActiveRecord::Base
   def recalculate_attributes_for(issue_id)
     if issue_id && p = Issue.find_by_id(issue_id)
       if p.priority_derived?
-        # priority = highest priority of children
-        if priority_position = p.children.joins(:priority).maximum("#{IssuePriority.table_name}.position")
+        # priority = highest priority of open children
+        # priority is left unchanged if all children are closed and there's no default priority defined
+        if priority_position = p.children.open.joins(:priority).maximum("#{IssuePriority.table_name}.position")
           p.priority = IssuePriority.find_by_position(priority_position)
+        elsif default_priority = IssuePriority.default
+          p.priority = default_priority
         end
       end
 

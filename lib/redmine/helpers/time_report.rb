@@ -70,10 +70,10 @@ module Redmine
           end
           
           min = @hours.collect {|row| row['spent_on']}.min
-          @from = min ? min.to_date : Date.today
+          @from = min ? min.to_date : User.current.today
 
           max = @hours.collect {|row| row['spent_on']}.max
-          @to = max ? max.to_date : Date.today
+          @to = max ? max.to_date : User.current.today
           
           @total_hours = @hours.inject(0) {|s,k| s = s + k['hours'].to_f}
 
@@ -108,7 +108,7 @@ module Redmine
                                               :klass => IssueStatus,
                                               :label => :field_status},
                                  'version' => {:sql => "#{Issue.table_name}.fixed_version_id",
-                                              :klass => Version,
+                                              :klass => ::Version,
                                               :label => :label_version},
                                  'category' => {:sql => "#{Issue.table_name}.category_id",
                                                 :klass => IssueCategory,

@@ -197,7 +197,9 @@ class Project < ActiveRecord::Base
         if role.allowed_to?(permission)
           s = "#{Project.table_name}.is_public = #{connection.quoted_true}"
           if user.id
-            s = "(#{s} AND #{Project.table_name}.id NOT IN (SELECT project_id FROM #{Member.table_name} WHERE user_id = #{user.id}))"
+            group = role.anonymous? ? Group.anonymous : Group.non_member
+            principal_ids = [user.id, group.id].compact
+            s = "(#{s} AND #{Project.table_name}.id NOT IN (SELECT project_id FROM #{Member.table_name} WHERE user_id IN (#{principal_ids.join(',')})))"
           end
           statement_by_role[role] = s
         end
@@ -421,16 +423,24 @@ class Project < ActiveRecord::Base
     save
   end
 
-  # Returns an array of the trackers used by the project and its active sub projects
-  def rolled_up_trackers
-    @rolled_up_trackers ||=
-      Tracker.
-        joins(:projects).
-        joins("JOIN #{EnabledModule.table_name} ON #{EnabledModule.table_name}.project_id = #{Project.table_name}.id AND #{EnabledModule.table_name}.name = 'issue_tracking'").
-        where("#{Project.table_name}.lft >= ? AND #{Project.table_name}.rgt <= ? AND #{Project.table_name}.status <> ?", lft, rgt, STATUS_ARCHIVED).
-        uniq.
-        sorted.
-        to_a
+  # Returns a scope of the trackers used by the project and its active sub projects
+  def rolled_up_trackers(include_subprojects=true)
+    if include_subprojects
+      @rolled_up_trackers ||= rolled_up_trackers_base_scope.
+          where("#{Project.table_name}.lft >= ? AND #{Project.table_name}.rgt <= ?", lft, rgt)
+    else
+      rolled_up_trackers_base_scope.
+        where(:projects => {:id => id})
+    end
+  end
+
+  def rolled_up_trackers_base_scope
+    Tracker.
+      joins(projects: :enabled_modules).
+      where("#{Project.table_name}.status <> ?", STATUS_ARCHIVED).
+      where(:enabled_modules => {:name => 'issue_tracking'}).
+      uniq.
+      sorted
   end
 
   # Closes open and locked project versions that are completed
@@ -504,16 +514,27 @@ class Project < ActiveRecord::Base
   end
 
   # Return a Principal scope of users/groups issues can be assigned to
-  def assignable_users
+  def assignable_users(tracker=nil)
+    return @assignable_users[tracker] if @assignable_users && @assignable_users[tracker]
+
     types = ['User']
     types << 'Group' if Setting.issue_group_assignment?
 
-    @assignable_users ||= Principal.
+    scope = Principal.
       active.
       joins(:members => :roles).
       where(:type => types, :members => {:project_id => id}, :roles => {:assignable => true}).
       uniq.
       sorted
+
+    if tracker
+      # Rejects users that cannot the view the tracker
+      roles = Role.where(:assignable => true).select {|role| role.permissions_tracker?(:view_issues, tracker)}
+      scope = scope.where(:roles => {:id => roles.map(&:id)})
+    end
+
+    @assignable_users ||= {}
+    @assignable_users[tracker] = scope
   end
 
   # Returns the mail addresses of users that should be always notified on project events
@@ -524,7 +545,7 @@ class Project < ActiveRecord::Base
   # Returns the users that should be notified on project events
   def notified_users
     # TODO: User part should be extracted to User#notify_about?
-    members.select {|m| m.principal.present? && (m.mail_notification? || m.principal.mail_notification == 'all')}.collect {|m| m.principal}
+    members.preload(:principal).select {|m| m.principal.present? && (m.mail_notification? || m.principal.mail_notification == 'all')}.collect {|m| m.principal}
   end
 
   # Returns a scope of all custom fields enabled for project issues
@@ -594,7 +615,7 @@ class Project < ActiveRecord::Base
   end
 
   def overdue?
-    active? && !due_date.nil? && (due_date < Date.today)
+    active? && !due_date.nil? && (due_date < User.current.today)
   end
 
   # Returns the percent completed for this project, based on the

@@ -4,9 +4,10 @@ if Gem::Version.new(Bundler::VERSION) < Gem::Version.new('1.5.0')
   abort "Redmine requires Bundler 1.5.0 or higher (you're using #{Bundler::VERSION}).\nPlease update with 'gem update bundler'."
 end
 
-gem "rails", "4.2.5.2"
+gem "rails", "4.2.7.1"
+gem "addressable", "2.4.0" if RUBY_VERSION < "2.0"
 gem "jquery-rails", "~> 3.1.4"
-gem "coderay", "~> 1.1.0"
+gem "coderay", "~> 1.1.1"
 gem "builder", ">= 3.0.4"
 gem "request_store", "1.0.5"
 gem "mime-types", (RUBY_VERSION >= "2.0" ? "~> 3.0" : "~> 2.99")
@@ -62,7 +63,7 @@ end
 gem "pg", "~> 0.18.1"
 
 group :development do
-  gem "rdoc", ">= 2.4.2"
+  gem "rdoc", "~> 4.3"
   gem "yard"
 end
 
@@ -73,7 +74,7 @@ group :test do
   gem "simplecov", "~> 0.9.1", :require => false
   # For running UI tests
   gem "capybara"
-  gem "selenium-webdriver"
+  gem "selenium-webdriver", "~> 2.53.4"
 end
 
 local_gemfile = File.join(File.dirname(__FILE__), "Gemfile.local")

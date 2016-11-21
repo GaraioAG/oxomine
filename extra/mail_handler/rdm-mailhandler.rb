@@ -93,6 +93,7 @@ class RedmineMailHandler
       opts.on("-t", "--tracker TRACKER",      "name of the target tracker") {|v| self.issue_attributes['tracker'] = v}
       opts.on(      "--category CATEGORY",    "name of the target category") {|v| self.issue_attributes['category'] = v}
       opts.on(      "--priority PRIORITY",    "name of the target priority") {|v| self.issue_attributes['priority'] = v}
+      opts.on(      "--assigned-to ASSIGNEE", "assignee (username or group name)") {|v| self.issue_attributes['assigned_to'] = v}
       opts.on(      "--fixed-version VERSION","name of the target version") {|v| self.issue_attributes['fixed_version'] = v}
       opts.on(      "--private",              "create new issues as private") {|v| self.issue_attributes['is_private'] = '1'}
       opts.on("-o", "--allow-override ATTRS", "allow email content to set attributes values",
@@ -107,12 +108,12 @@ Overrides:
   * project, tracker, status, priority, category, assigned_to, fixed_version,
     start_date, due_date, estimated_hours, done_ratio
   * custom fields names with underscores instead of spaces (case insensitive)
-  Example: --allow_override=project,priority,my_custom_field
+  Example: --allow-override=project,priority,my_custom_field
 
   If the --project option is not set, project is overridable by default for
   emails that create new issues.
 
-  You can use --allow_override=all to allow all attributes to be overridable.
+  You can use --allow-override=all to allow all attributes to be overridable.
 
 Examples:
   No project specified, emails MUST contain the 'Project' keyword, otherwise

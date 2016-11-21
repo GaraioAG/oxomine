@@ -166,7 +166,7 @@ pt-BR:
   general_first_day_of_week: '1'
 
   notice_account_updated: Conta atualizada com sucesso.
-  notice_account_invalid_creditentials: Usuário ou senha inválido.
+  notice_account_invalid_credentials: Usuário ou senha inválido.
   notice_account_password_updated: Senha alterada com sucesso.
   notice_account_wrong_password: Senha inválida.
   notice_account_register_done: Conta criada com sucesso. Para ativar sua conta, clique no link que lhe foi enviado por e-mail.
@@ -196,6 +196,7 @@ pt-BR:
   error_issue_not_found_in_project: 'A tarefa não foi encontrada ou não pertence a este projeto'
   error_no_tracker_in_project: 'Não há um tipo de tarefa associado a este projeto. Favor verificar as configurações do projeto.'
   error_no_default_issue_status: 'A situação padrão para tarefa não está definida. Favor verificar sua configuração (Vá em "Administração -> Situação da tarefa").'
+  error_ldap_bind_credentials: "Conta/Palavra-chave do LDAP não é válida"
 
   mail_subject_lost_password: "Sua senha do %{value}."
   mail_body_lost_password: 'Para mudar sua senha, clique no link abaixo:'
@@ -1154,7 +1155,6 @@ pt-BR:
   label_blank_value: Branco
   permission_copy_issues: Copiar tarefas
   error_password_expired: Sua senha expirou ou requer atualização
-
   field_time_entries_visibility: Visibilidade do log de tempo
   setting_password_max_age: Requer troca de senha depois
   label_parent_task_attributes: Atributos das tarefas pai
@@ -1167,9 +1167,8 @@ pt-BR:
   label_member_management_selected_roles_only: Somente esses papéis
   label_password_required: Confirme sua senha para continuar
   label_total_spent_time: Tempo gasto geral
-  notice_import_finished: Tpdps %{count} itens foram importados.
-  notice_import_finished_with_errors: ! '%{count} fora de %{total} não puderam ser 
-    importados.'
+  notice_import_finished: "%{count} itens foram importados"
+  notice_import_finished_with_errors: "%{count} fora de %{total} não puderam ser importados"
   error_invalid_file_encoding: O arquivo não é válido %{encoding} é a codificação do arquivo
   error_invalid_csv_file_or_settings: O arquivo não é um arquivo CSV ou não corresponde as
     definições abaixo
@@ -1201,3 +1200,29 @@ pt-BR:
   label_any_open_issues: Quaisquer tarefas abertas
   label_no_open_issues: Sem tarefas abertas
   label_default_values_for_new_users: Valor padrão para novos usuários
+  setting_sys_api_key: Chave de API
+  setting_lost_password: Perdi minha senha
+  mail_subject_security_notification: Notificação de segurança
+  mail_body_security_notification_change: ! '%{field} foi alterado.'
+  mail_body_security_notification_change_to: ! '%{field} foi alterado para %{value}.'
+  mail_body_security_notification_add: ! '%{field} %{value} foi adicionado.'
+  mail_body_security_notification_remove: ! '%{field} %{value} foi excluído.'
+  mail_body_security_notification_notify_enabled: Endereço de e-mail %{value} agora recebe
+    notificações.
+  mail_body_security_notification_notify_disabled: Endereço de e-mail %{value} deixou de
+    receber notificações.
+  mail_body_settings_updated: ! 'As seguintes configurações foram alteradas:'
+  field_remote_ip: Endereço IP
+  label_wiki_page_new: Nova página wiki
+  label_relations: Relações
+  button_filter: Filtro
+  mail_body_password_updated: Sua senha foi alterada.
+  label_no_preview: Não há visualização disponível
+  error_no_tracker_allowed_for_new_issue_in_project: O projeto não tem nenhum tipo de tarefa
+    para o qual você pode criar um chamado
+  label_tracker_all: Todos os tipos de tarefa
+  label_new_project_issue_tab_enabled: Exibir "Nova tarefa" em aba
+  setting_new_item_menu_tab: Aba menu do projeto para criação de novos objetos
+  label_new_object_tab_enabled: Exibir o "+" suspenso
+  error_no_projects_with_tracker_allowed_for_new_issue: There are no projects with trackers
+    for which you can create an issue

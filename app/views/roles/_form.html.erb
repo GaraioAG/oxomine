@@ -91,7 +91,11 @@
       <% end %>
     </tr>
     <% Tracker.sorted.all.each do |tracker| %>
+<<<<<<< HEAD
     <tr class="<%= cycle("odd", "even") %>">
+=======
+    <tr>
+>>>>>>> redmine/3.4-stable
       <td class="name"><%= tracker.name %></td>
       <% permissions.each do |permission| %>
       <td class="<%= "#{permission}_shown" %>"><%= check_box_tag "role[permissions_tracker_ids][#{permission}][]",

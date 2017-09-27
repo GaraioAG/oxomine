@@ -4,15 +4,13 @@ if Gem::Version.new(Bundler::VERSION) < Gem::Version.new('1.5.0')
   abort "Redmine requires Bundler 1.5.0 or higher (you're using #{Bundler::VERSION}).\nPlease update with 'gem update bundler'."
 end
 
-gem "rails", "4.2.7.1"
+gem "rails", "4.2.8"
 gem "addressable", "2.4.0" if RUBY_VERSION < "2.0"
 gem "jquery-rails", "~> 3.1.4"
 gem "coderay", "~> 1.1.1"
-gem "builder", ">= 3.0.4"
 gem "request_store", "1.0.5"
 gem "mime-types", (RUBY_VERSION >= "2.0" ? "~> 3.0" : "~> 2.99")
 gem "protected_attributes"
-gem "actionpack-action_caching"
 gem "actionpack-xml_parser"
 gem "roadie-rails", "~> 1.1.1"
 gem "roadie", "~> 3.2.1"
@@ -22,11 +20,11 @@ gem "nokogiri", (RUBY_VERSION >= "2.1" ? "~> 1.7.2" : "~> 1.6.8")
 gem "i18n", "~> 0.7.0"
 gem "ffi", "1.9.14", :platforms => :mingw if RUBY_VERSION < "2.0"
 
-# Request at least rails-html-sanitizer 1.0.3 because of security advisories 
+# Request at least rails-html-sanitizer 1.0.3 because of security advisories
 gem "rails-html-sanitizer", ">= 1.0.3"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem 'tzinfo-data', platforms: [:mingw, :x64_mingw, :mswin, :jruby]
+gem 'tzinfo-data', platforms: [:mingw, :x64_mingw, :mswin]
 gem "rbpdf", "~> 1.19.2"
 
 # Optional gem for LDAP authentication
@@ -40,10 +38,6 @@ group :openid do
   gem "rack-openid"
 end
 
-# Gems for plugins
-gem 'oauth2'
-gem 'json'
-
 platforms :mri, :mingw, :x64_mingw do
   # Optional gem for exporting the gantt to a PNG file, not supported with jruby
   group :rmagick do
@@ -52,17 +46,11 @@ platforms :mri, :mingw, :x64_mingw do
 
   # Optional Markdown support, not for JRuby
   group :markdown do
-    gem "redcarpet", "~> 3.3.2"
+    gem "redcarpet", "~> 3.4.0"
   end
 end
 
-platforms :jruby do
-  # jruby-openssl is bundled with JRuby 1.7.0
-  gem "jruby-openssl" if Object.const_defined?(:JRUBY_VERSION) && JRUBY_VERSION < '1.7.0'
-  gem "activerecord-jdbc-adapter", "~> 1.3.2"
-end
-
-gem "pg", "~> 0.18.1"
+gem "pg"
 
 group :development do
   gem "rdoc", "~> 4.3"
@@ -74,6 +62,8 @@ group :test do
   gem "rails-dom-testing"
   gem "mocha"
   gem "simplecov", "~> 0.9.1", :require => false
+  # TODO: remove this after upgrading to Rails 5
+  gem "test_after_commit", "~> 0.4.2"
   # For running UI tests
   gem "capybara"
   gem "selenium-webdriver", "~> 2.53.4"

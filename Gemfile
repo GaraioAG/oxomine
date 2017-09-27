@@ -50,6 +50,10 @@ platforms :mri, :mingw, :x64_mingw do
   end
 end
 
+# Gems for plugins
+gem 'oauth2'
+gem 'json'
+
 gem "pg"
 
 group :development do

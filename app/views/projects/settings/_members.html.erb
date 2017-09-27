@@ -1,9 +1,4 @@
-<<<<<<< HEAD
-<% roles = Role.find_all_givable
-   members = @project.memberships.includes(:member_roles, :roles, :principal).to_a.sort %>
-=======
 <% members = @project.memberships.sorted.to_a %>
->>>>>>> redmine/3.4-stable
 
 <p><%= link_to l(:label_member_new), new_project_membership_path(@project), :remote => true, :class => "icon icon-add" %></p>
 

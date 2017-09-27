@@ -492,8 +492,6 @@ class Query < ActiveRecord::Base
     @all_projects_values = values
   end
 
-<<<<<<< HEAD
-=======
   def project_values
     project_values = []
     if User.current.logged? && User.current.memberships.any?
@@ -563,7 +561,6 @@ class Query < ActiveRecord::Base
     statuses.collect{|s| [s.name, s.id.to_s]}
   end
 
->>>>>>> redmine/3.4-stable
   # Returns a scope of issue custom fields that are available as columns or filters
   def issue_custom_fields
     if project
@@ -786,11 +783,7 @@ class Query < ActiveRecord::Base
   # Returns the SQL sort order that should be prepended for grouping
   def group_by_sort_order
     if column = group_by_column
-<<<<<<< HEAD
-      order = (sort_criteria_order_for(column.name) || column.default_order || 'asc').try(:upcase)
-=======
       order = (sort_criteria.order_for(column.name) || column.default_order || 'asc').try(:upcase)
->>>>>>> redmine/3.4-stable
       Array(column.sortable).map {|s| "#{s} #{order}"}
     end
   end

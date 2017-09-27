@@ -90,11 +90,7 @@ module IssuesHelper
   end
 
   def render_descendants_tree(issue)
-<<<<<<< HEAD
-    s = '<form><table class="list issues">'
-=======
     s = '<table class="list issues odd-even">'
->>>>>>> redmine/3.4-stable
     issue_list(issue.descendants.visible.preload(:status, :priority, :tracker, :assigned_to).sort_by(&:lft)) do |child, level|
       css = "issue issue-#{child.id} hascontextmenu #{child.css_classes}"
       css << " idnt idnt-#{level}" if level > 0
@@ -189,16 +185,6 @@ module IssuesHelper
     }
     attrs[:tracker_id] = issue.tracker unless issue.tracker.disabled_core_fields.include?('parent_issue_id')
     link_to(l(:button_add), new_project_issue_path(issue.project, :issue => attrs, :back_url => issue_path(issue)))
-  end
-
-  def trackers_options_for_select(issue)
-    trackers = issue.allowed_target_trackers
-    if issue.new_record? && issue.parent_issue_id.present?
-      trackers = trackers.reject do |tracker|
-        issue.tracker_id != tracker.id && tracker.disabled_core_fields.include?('parent_issue_id')
-      end
-    end
-    trackers.collect {|t| [t.name, t.id]}
   end
 
   def trackers_options_for_select(issue)
@@ -482,21 +468,10 @@ module IssuesHelper
       if detail.property == 'attachment' && value.present? &&
           atta = detail.journal.journalized.attachments.detect {|a| a.id == detail.prop_key.to_i}
         # Link to the attachment if it has not been removed
-<<<<<<< HEAD
-        value = link_to_attachment(atta, :download => true, :only_path => options[:only_path])
-        if options[:only_path] != false && (atta.is_text? || atta.is_image?)
-          value += ' '
-          value += link_to(l(:button_view),
-                           { :controller => 'attachments', :action => 'show',
-                             :id => atta, :filename => atta.filename },
-                           :class => 'icon-only icon-magnifier',
-                           :title => l(:button_view))
-=======
         value = link_to_attachment(atta, only_path: options[:only_path])
         if options[:only_path] != false
           value += ' '
           value += link_to_attachment atta, class: 'icon-only icon-download', title: l(:button_download), download: true
->>>>>>> redmine/3.4-stable
         end
       else
         value = content_tag("i", h(value)) if value

@@ -110,11 +110,7 @@
 
   <% if @subprojects.any? %>
   <div class="projects box">
-<<<<<<< HEAD
-    <h3><%=l(:label_subproject_plural)%></h3>
-=======
     <h3 class="icon icon-projects"><%=l(:label_subproject_plural)%></h3>
->>>>>>> redmine/3.4-stable
     <%= @subprojects.collect{|p| link_to p, project_path(p), :class => p.css_classes}.join(", ").html_safe %>
   </div>
   <% end %>

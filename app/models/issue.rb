@@ -265,11 +265,7 @@ class Issue < ActiveRecord::Base
   # Copies attributes from another issue, arg can be an id or an Issue
   def copy_from(arg, options={})
     issue = arg.is_a?(Issue) ? arg : Issue.visible.find(arg)
-<<<<<<< HEAD
-    self.attributes = issue.attributes.dup.except("id", "root_id", "parent_id", "lft", "rgt", "created_on", "updated_on", "closed_on")
-=======
     self.attributes = issue.attributes.dup.except("id", "root_id", "parent_id", "lft", "rgt", "created_on", "updated_on", "status_id", "closed_on")
->>>>>>> redmine/3.4-stable
     self.custom_field_values = issue.custom_field_values.inject({}) {|h,v| h[v.custom_field_id] = v.value; h}
     if options[:keep_status]
       self.status = issue.status
@@ -543,12 +539,6 @@ class Issue < ActiveRecord::Base
         self.tracker_id = t
       end
     end
-<<<<<<< HEAD
-    if project
-      # Set a default tracker to accept custom field values
-      # even if tracker is not specified
-      self.tracker ||= allowed_target_trackers(user).first
-=======
     if project && tracker.nil?
       # Set a default tracker to accept custom field values
       # even if tracker is not specified
@@ -560,7 +550,6 @@ class Issue < ActiveRecord::Base
         self.tracker = allowed_trackers.detect {|t| t.core_fields.include?('parent_issue_id')}
       end
       self.tracker ||= allowed_trackers.first
->>>>>>> redmine/3.4-stable
     end
 
     statuses_allowed = new_statuses_allowed_to(user)
@@ -1186,8 +1175,6 @@ class Issue < ActiveRecord::Base
       where(:ancestors => {:id => issues.map(&:id)})
   end
 
-<<<<<<< HEAD
-=======
   # Preloads users who updated last a collection of issues
   def self.load_visible_last_updated_by(issues, user=User.current)
     if issues.any?
@@ -1227,7 +1214,6 @@ class Issue < ActiveRecord::Base
     end
   end
 
->>>>>>> redmine/3.4-stable
   # Finds an issue relation given its id.
   def find_relation(relation_id)
     IssueRelation.where("issue_to_id = ? OR issue_from_id = ?", id, id).find(relation_id)

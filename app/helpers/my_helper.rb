@@ -103,15 +103,6 @@ module MyHelper
     render :partial => 'my/blocks/issues', :locals => {:query => query, :issues => issues, :block => block}
   end
 
-<<<<<<< HEAD
-  def issuesreportedbyme_items
-    Issue.visible.open.
-      where(:author_id => User.current.id).
-      limit(10).
-      includes(:status, :project, :tracker).
-      references(:status, :project, :tracker).
-      order("#{Issue.table_name}.updated_on DESC")
-=======
   def render_issuesreportedbyme_block(block, settings)
     query = IssueQuery.new(:name => l(:label_reported_issues), :user => User.current)
     query.add_filter 'author_id', '=', ['me']
@@ -130,7 +121,6 @@ module MyHelper
     issues = query.issues(:limit => 10)
 
     render :partial => 'my/blocks/issues', :locals => {:query => query, :issues => issues, :block => block}
->>>>>>> redmine/3.4-stable
   end
 
   def render_issuequery_block(block, settings)

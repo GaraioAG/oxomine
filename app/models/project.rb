@@ -324,10 +324,7 @@ class Project < ActiveRecord::Base
     @shared_versions = nil
     @rolled_up_versions = nil
     @rolled_up_trackers = nil
-<<<<<<< HEAD
-=======
     @rolled_up_statuses = nil
->>>>>>> redmine/3.4-stable
     @rolled_up_custom_fields = nil
     @all_issue_custom_fields = nil
     @all_time_entry_custom_fields = nil
@@ -452,10 +449,6 @@ class Project < ActiveRecord::Base
       joins(projects: :enabled_modules).
       where("#{Project.table_name}.status <> ?", STATUS_ARCHIVED).
       where(:enabled_modules => {:name => 'issue_tracking'}).
-<<<<<<< HEAD
-      uniq.
-      sorted
-=======
       distinct.
       sorted
   end
@@ -469,7 +462,6 @@ class Project < ActiveRecord::Base
       uniq
 
     IssueStatus.where(:id => issue_status_ids).sorted
->>>>>>> redmine/3.4-stable
   end
 
   # Closes open and locked project versions that are completed

@@ -67,11 +67,6 @@ class Tracker < ActiveRecord::Base
         end
       end
     end
-<<<<<<< HEAD
-    joins(:projects).where(condition).uniq
-  }
-
-=======
     joins(:projects).where(condition).distinct
   }
 
@@ -83,7 +78,6 @@ class Tracker < ActiveRecord::Base
     'custom_field_ids',
     'project_ids'
 
->>>>>>> redmine/3.4-stable
   def to_s; name end
 
   def <=>(tracker)

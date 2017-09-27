@@ -31,18 +31,6 @@
       <fieldset><legend><%= l(:field_notes) %></legend>
       <%= f.text_area :notes, :cols => 60, :rows => 10, :class => 'wiki-edit', :no_label => true %>
       <%= wikitoolbar_for 'issue_notes' %>
-<<<<<<< HEAD
-  
-      <% if @issue.safe_attribute? 'private_notes' %>
-      <%= f.check_box :private_notes, :no_label => true %> <label for="issue_private_notes"><%= l(:field_private_notes) %></label>
-      <% end %>
-  
-      <%= call_hook(:view_issues_edit_notes_bottom, { :issue => @issue, :notes => @notes, :form => f }) %>
-      </fieldset>
-  
-      <fieldset><legend><%= l(:label_attachment_plural) %></legend>
-      <p><%= render :partial => 'attachments/form', :locals => {:container => @issue} %></p>
-=======
 
       <% if @issue.safe_attribute? 'private_notes' %>
       <%= f.check_box :private_notes, :no_label => true %> <label for="issue_private_notes"><%= l(:field_private_notes) %></label>
@@ -73,7 +61,6 @@
         <div id="new-attachments" style="display:inline-block;">
           <%= render :partial => 'attachments/form', :locals => {:container => @issue} %>
         </div>
->>>>>>> redmine/3.4-stable
       </fieldset>
     <% end %>
     </div>

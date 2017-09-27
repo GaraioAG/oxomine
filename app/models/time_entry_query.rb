@@ -90,13 +90,9 @@ class TimeEntryQuery < Query
     @available_columns += TimeEntryCustomField.visible.
                             map {|cf| QueryCustomFieldColumn.new(cf) }
     @available_columns += issue_custom_fields.visible.
-<<<<<<< HEAD
-                            map {|cf| QueryAssociationCustomFieldColumn.new(:issue, cf) }
-=======
                             map {|cf| QueryAssociationCustomFieldColumn.new(:issue, cf, :totalable => false) }
     @available_columns += ProjectCustomField.visible.
                             map {|cf| QueryAssociationCustomFieldColumn.new(:project, cf) }
->>>>>>> redmine/3.4-stable
     @available_columns
   end
 

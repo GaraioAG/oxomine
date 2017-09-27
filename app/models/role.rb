@@ -220,11 +220,7 @@ class Role < ActiveRecord::Base
   end
 
   # Returns true if tracker_id belongs to the list of
-<<<<<<< HEAD
-  # trackers for which permission is given 
-=======
   # trackers for which permission is given
->>>>>>> redmine/3.4-stable
   def permissions_tracker_ids?(permission, tracker_id)
     permissions_tracker_ids(permission).include?(tracker_id)
   end
@@ -266,13 +262,10 @@ class Role < ActiveRecord::Base
     self
   end
 
-<<<<<<< HEAD
-=======
   def copy_workflow_rules(source_role)
     WorkflowRule.copy(nil, source_role, nil, self)
   end
 
->>>>>>> redmine/3.4-stable
   # Find all the roles that can be given to a project member
   def self.find_all_givable
     Role.givable.to_a

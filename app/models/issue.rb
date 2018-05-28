@@ -116,8 +116,6 @@ class Issue < ActiveRecord::Base
   after_save :after_create_from_copy
   after_destroy :update_parent_attributes
   after_create :send_notification
-  # Keep it at the end of after_save callbacks
-  after_save :clear_assigned_to_was
 
   # Returns a SQL conditions string used to find all issues visible by the specified user
   def self.visible_condition(user, options={})
@@ -443,7 +441,7 @@ class Issue < ActiveRecord::Base
   end
 
   def estimated_hours=(h)
-    write_attribute :estimated_hours, (h.is_a?(String) ? h.to_hours : h)
+    write_attribute :estimated_hours, (h.is_a?(String) ? (h.to_hours || h) : h)
   end
 
   safe_attributes 'project_id',

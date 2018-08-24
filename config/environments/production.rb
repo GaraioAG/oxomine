@@ -32,9 +32,3 @@ Rails.application.configure do
     config.logger = ActiveSupport::TaggedLogging.new(logger)
   end
 end
-
-class StackdriverLogFormatter < ActiveSupport::Logger::SimpleFormatter
-  def call(severity, timestamp, progname, msg)
-    "#{severity}: #{msg.is_a?(String) ? msg : msg.inspect}\n"
-  end
-end

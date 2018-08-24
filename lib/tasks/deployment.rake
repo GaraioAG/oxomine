@@ -67,9 +67,10 @@ namespace :deployment do
 
   desc 'Apply the new configuration to a Kubernetes cluster'
   task :apply do
+    puts
     puts "\e[36mApplying the new configuration in the Kubernetes cluster 'oxon-infrastructure'...\e[0m"
     sh "gcloud container clusters get-credentials shared-cluster"
-    sh "kubectl apply -f #{Rails.root.join('deploy/oxomine.yaml')}"
+    sh "sed 's/$TAG/#{TAG}/g' #{Rails.root.join('deploy/oxomine.yaml')} | kubectl apply -f -"
     puts "\e[32mDone!\e[0m"
   end
 end

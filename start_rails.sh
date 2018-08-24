@@ -9,4 +9,4 @@ else
 fi
 rake assets:precompile
 
-rails server -p 80
+rails server -p 80 -b 0.0.0.0

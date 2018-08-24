@@ -62,10 +62,6 @@ spec:
 #            - name: compute-credentials
 #              mountPath: /secrets/compute
 #              readOnly: true
-          readinessProbe:
-            httpGet:
-              path: /login
-              port: 80
         - name: cloudsql-proxy
           image: gcr.io/cloudsql-docker/gce-proxy:1.11
           command: ["/cloud_sql_proxy",

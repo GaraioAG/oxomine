@@ -1,0 +1,9 @@
+/.bundle
+
+/log/*
+/tmp/*
+
+.byebug_history
+
+.idea
+/*.iml

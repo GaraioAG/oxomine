@@ -59,6 +59,7 @@ gem 'oauth2'
 gem 'json'
 
 gem "pg"
+gem "puma"
 
 group :development do
   gem "rdoc", "~> 4.3"

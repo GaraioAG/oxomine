@@ -101,6 +101,7 @@ GEM
     protected_attributes (1.1.4)
       activemodel (>= 4.0.1, < 5.0)
     public_suffix (3.0.0)
+    puma (3.12.0)
     rack (1.6.8)
     rack-openid (1.4.2)
       rack (>= 1.1.0)
@@ -195,6 +196,7 @@ DEPENDENCIES
   oauth2
   pg
   protected_attributes
+  puma
   rack-openid
   rails (= 4.2.8)
   rails-dom-testing

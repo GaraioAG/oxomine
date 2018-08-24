@@ -6,10 +6,6 @@ metadata:
   annotations:
     kubernetes.io/ingress.global-static-ip-name: "oxomine"
 spec:
-  rules:
-  - http:
-      paths:
-      - path: /*
-        backend:
-          serviceName: oxomine
-          servicePort: 80
+  backend:
+    serviceName: oxomine
+    servicePort: 80

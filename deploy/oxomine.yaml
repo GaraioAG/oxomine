@@ -54,7 +54,8 @@ spec:
                   name: "oxomine-app-secrets"
                   key: "secret-key-base"
           ports:
-            - containerPort: 80
+            - name: http
+              containerPort: 80
 #          volumeMounts:
 #            - name: storage-credentials
 #              mountPath: /secrets/storage
@@ -62,6 +63,18 @@ spec:
 #            - name: compute-credentials
 #              mountPath: /secrets/compute
 #              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /account/register
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 65
+          livenessProbe:
+            httpGet:
+              path: /account/register
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 65
         - name: cloudsql-proxy
           image: gcr.io/cloudsql-docker/gce-proxy:1.11
           command: ["/cloud_sql_proxy",

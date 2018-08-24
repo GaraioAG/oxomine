@@ -29,7 +29,7 @@ gem "rails-html-sanitizer", ">= 1.0.3"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem 'tzinfo-data', platforms: [:mingw, :x64_mingw, :mswin]
-gem "rbpdf", "~> 1.19.3"
+gem "rbpdf", "~> 1.19.5"
 
 # Optional gem for LDAP authentication
 group :ldap do
@@ -73,7 +73,7 @@ group :test do
   # TODO: remove this after upgrading to Rails 5
   gem "test_after_commit", "~> 0.4.2"
   # For running UI tests
-  gem "capybara"
+  gem "capybara", '~> 2.13'
   gem "selenium-webdriver", "~> 2.53.4"
 end
 

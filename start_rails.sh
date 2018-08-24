@@ -7,6 +7,6 @@ if rake db:version | grep ": 0$"; then
 else
   rake db:migrate
 fi
-rails assets:precompile
+rake assets:precompile
 
 rails server -p 80

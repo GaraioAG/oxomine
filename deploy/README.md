@@ -42,7 +42,7 @@ kubectl create secret generic oxomine-app-secrets --from-literal=secret-key-base
 
 ```
 
-Establish connection to Cloud SQL instance (https://cloud.google.com/sql/docs/mysql/connect-kubernetes-engine) via 
+Establish connection to Cloud SQL instance (https://cloud.google.com/sql/docs/postgres/connect-kubernetes-engine) via 
 "OXON DB service account" (use key in JSON format):
 
 ```bash

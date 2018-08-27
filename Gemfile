@@ -55,10 +55,12 @@ platforms :mri, :mingw, :x64_mingw do
 end
 
 # Gems for plugins
-gem 'oauth2'
-gem 'json'
+gem "oauth2"
+gem "json"
+gem "aws-sdk", "~> 1"
+gem "aws-sdk-v1", :source => "https://rubygems.org/"
 
-gem "pg"
+gem "pg", "~> 0.21"
 gem "puma"
 
 group :development do

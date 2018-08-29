@@ -16,7 +16,6 @@ namespace :deployment do
     if system("git diff --exit-code > /dev/null 2>&1") && system("git diff --cached --exit-code > /dev/null 2>&1")
       puts "git repository is \e[32mclean\e[0m"
     else
-      puts "git has \e[31mchanges\e[0m - commit your work and try again"
       abort "\e[31m!!!\e[0m Your Git working tree is not clean! Commit your work and try again."
     end
 

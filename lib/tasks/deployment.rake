@@ -76,7 +76,6 @@ namespace :deployment do
 
   desc 'Apply the new cronjobs'
   task :apply_cronjobs do
-    puts
     puts "\e[36mApplying the new cronjobs in the Kubernetes cluster 'oxon-infrastructure'...\e[0m"
     sh "gcloud container clusters get-credentials shared-cluster"
     sh "sed 's/$TAG/#{TAG}/g' #{Rails.root.join('deploy/oxomine-job-prune-attachments.yaml')} | kubectl apply -f -"

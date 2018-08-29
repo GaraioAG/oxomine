@@ -7,6 +7,7 @@ namespace :deployment do
     Rake::Task['deployment:build_image'].execute
     Rake::Task['deployment:push_image'].execute
     Rake::Task['deployment:apply'].execute
+    Rake::Task['deployment:apply_cronjobs'].execute
   end
 
   desc 'Check the prerequisites'
@@ -70,6 +71,17 @@ namespace :deployment do
     puts "\e[36mApplying the new configuration in the Kubernetes cluster 'oxon-infrastructure'...\e[0m"
     sh "gcloud container clusters get-credentials shared-cluster"
     sh "sed 's/$TAG/#{TAG}/g' #{Rails.root.join('deploy/oxomine.yaml')} | kubectl apply -f -"
+    puts "\e[32mDone!\e[0m"
+  end
+
+  desc 'Apply the new cronjobs'
+  task :apply_cronjobs do
+    puts
+    puts "\e[36mApplying the new cronjobs in the Kubernetes cluster 'oxon-infrastructure'...\e[0m"
+    sh "gcloud container clusters get-credentials shared-cluster"
+    sh "sed 's/$TAG/#{TAG}/g' #{Rails.root.join('deploy/oxomine-job-prune-attachments.yaml')} | kubectl apply -f -"
+    sh "sed 's/$TAG/#{TAG}/g' #{Rails.root.join('deploy/oxomine-job-receive-emails.yaml')} | kubectl apply -f -"
+    sh "sed 's/$TAG/#{TAG}/g' #{Rails.root.join('deploy/oxomine-job-send-reminders.yaml')} | kubectl apply -f -"
     puts "\e[32mDone!\e[0m"
   end
 end

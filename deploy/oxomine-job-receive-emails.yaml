@@ -1,0 +1,95 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: oxomine-job-receive-emails
+spec:
+  schedule: "*/5 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: rails
+              image: eu.gcr.io/oxon-infrastructure/oxomine:$TAG
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  trap "touch /tmp/pod/main-terminated" EXIT
+                  /usr/local/bundle/bin/rake redmine:email:receive_imap host=imap.gmail.com port=993 ssl=1 project_from_subaddress=oxomine@oxon.ch
+              env:
+                - name: username
+                  value: "oxomine@oxon.ch"
+                - name: password
+                  valueFrom:
+                    secretKeyRef:
+                      name: "oxomine-app-secrets"
+                      key: "smtp_password"
+                - name: RAILS_ENV
+                  value: "production"
+                - name: RAILS_LOG_TO_STDOUT
+                  value: "true"
+                - name: DATABASE_NAME
+                  value: "oxomine"
+                - name: DATABASE_PORT
+                  value: "5432"
+                - name: DATABASE_HOST
+                  value: "localhost"
+                - name: DATABASE_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: "oxomine-database"
+                      key: "username"
+                - name: DATABASE_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: "oxomine-database"
+                      key: "password"
+                - name: SMTP_USERNAME
+                  value: "oxomine@oxon.ch"
+                - name: SMTP_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: "oxomine-app-secrets"
+                      key: "smtp_password"
+                - name: S3_BUCKET
+                  value: "oxomine-uploads"
+                - name: S3_ENDPOINT
+                  value: "storage.googleapis.com"
+                - name: S3_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: "oxomine-storage"
+                      key: "s3_access_key"
+                - name: S3_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: "oxomine-storage"
+                      key: "s3_secret_access_key"
+              volumeMounts:
+                - mountPath: /tmp/pod
+                  name: tmp-pod
+            - name: cloudsql-proxy
+              image: gcr.io/cloudsql-docker/gce-proxy:1.11
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  /cloud_sql_proxy -instances=oxon-infrastructure:europe-west1:shared-db=tcp:5432 -credential_file=/secrets/cloudsql/credentials.json &
+                  CHILD_PID=$!
+                  (while true; do if [[ -f "/tmp/pod/main-terminated" ]]; then kill $CHILD_PID; echo "Killed $CHILD_PID as the main container terminated."; fi; sleep 1; done) &
+                  wait $CHILD_PID
+                  if [[ -f "/tmp/pod/main-terminated" ]]; then exit 0; echo "Job completed. Exiting..."; fi
+              volumeMounts:
+                - name: cloudsql-instance-credentials
+                  mountPath: /secrets/cloudsql
+                  readOnly: true
+                - name: tmp-pod
+                  mountPath: /tmp/pod
+                  readOnly: true
+          volumes:
+            - name: cloudsql-instance-credentials
+              secret:
+                secretName: cloudsql-instance-credentials
+            - name: tmp-pod
+              emptyDir: {}
+          restartPolicy: Never
+      backoffLimit: 1

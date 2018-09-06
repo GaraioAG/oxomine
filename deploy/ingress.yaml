@@ -5,7 +5,20 @@ metadata:
   name: oxomine
   annotations:
     kubernetes.io/ingress.global-static-ip-name: "oxomine"
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/tls-acme: "true"
+    certmanager.k8s.io/cluster-issuer: "letsencrypt-production"
+    certmanager.k8s.io/acme-http01-edit-in-place: "true"
 spec:
-  backend:
-    serviceName: oxomine
-    servicePort: 80
+  rules:
+    - host: oxomine.stfu.ch
+      http:
+        paths:
+          - path: /*
+            backend:
+              serviceName: oxomine
+              servicePort: 80
+  tls:
+    - secretName: oxomine-stfu-ch-tls
+      hosts:
+        - oxomine.stfu.ch

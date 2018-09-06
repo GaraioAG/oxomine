@@ -76,3 +76,7 @@ rails deployment:deploy
 ```bash
 kubectl create -f ingress.yaml
 ```
+
+### Ingress with HTTPS(SSL/TLS)
+
+See: https://github.com/oxon/infrastructure/tree/master/oxocloud/cert-manager

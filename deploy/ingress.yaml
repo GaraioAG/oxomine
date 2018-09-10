@@ -11,7 +11,7 @@ metadata:
     certmanager.k8s.io/acme-http01-edit-in-place: "true"
 spec:
   rules:
-    - host: oxomine.stfu.ch
+    - host: oxomine.oxon.ch
       http:
         paths:
           - path: /*
@@ -19,6 +19,6 @@ spec:
               serviceName: oxomine
               servicePort: 80
   tls:
-    - secretName: oxomine-stfu-ch-tls
+    - secretName: oxomine-oxon-ch-tls
       hosts:
-        - oxomine.stfu.ch
+        - oxomine.oxon.ch

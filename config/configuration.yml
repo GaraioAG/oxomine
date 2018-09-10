@@ -7,8 +7,8 @@ default:
       port: 587
       domain: "oxon.ch"
       authentication: :plain
-      user_name: <%= ENV['ŜMTP_USERNAME'] %>
-      password: <%= ENV['ŜMTP_PASSWORD'] %>
+      user_name: <%= ENV['SMTP_USERNAME'] %>
+      password: <%= ENV['SMTP_PASSWORD'] %>
 
   attachments_storage_path:
 

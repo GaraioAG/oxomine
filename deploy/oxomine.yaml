@@ -79,13 +79,13 @@ spec:
               containerPort: 80
           readinessProbe:
             httpGet:
-              path: /maintenance.html
+              path: /account/register
               port: http
             initialDelaySeconds: 20
             periodSeconds: 65
           livenessProbe:
             httpGet:
-              path: /maintenance.html
+              path: /account/register
               port: http
             initialDelaySeconds: 20
             periodSeconds: 65

@@ -5,7 +5,6 @@
 /.rvmrc
 /config/additional_environment.rb
 /config/email.yml
-/config/secrets.yml
 /config/initializers/session_store.rb
 /coverage
 /db/*.db

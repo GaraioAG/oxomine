@@ -79,16 +79,14 @@ spec:
               containerPort: 80
           readinessProbe:
             httpGet:
-              path: /account/register
-              port: https
-              scheme: HTTPS
+              path: /maintenance.html
+              port: http
             initialDelaySeconds: 20
             periodSeconds: 65
           livenessProbe:
             httpGet:
-              path: /account/register
-              port: https
-              scheme: HTTPS
+              path: /maintenance.html
+              port: http
             initialDelaySeconds: 20
             periodSeconds: 65
         - name: cloudsql-proxy

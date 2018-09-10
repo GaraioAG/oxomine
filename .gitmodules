@@ -1,0 +1,6 @@
+[submodule "plugins/redmine_omniauth_google"]
+	path = plugins/redmine_omniauth_google
+	url = https://github.com/twinslash/redmine_omniauth_google.git
+[submodule "plugins/redmine_s3"]
+	path = plugins/redmine_s3
+	url = https://github.com/ka8725/redmine_s3.git

@@ -1,0 +1,24 @@
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: oxomine
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "oxomine"
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/tls-acme: "true"
+    certmanager.k8s.io/cluster-issuer: "letsencrypt-production"
+    certmanager.k8s.io/acme-http01-edit-in-place: "true"
+spec:
+  rules:
+    - host: oxomine.oxon.ch
+      http:
+        paths:
+          - path: /*
+            backend:
+              serviceName: oxomine
+              servicePort: 80
+  tls:
+    - secretName: oxomine-oxon-ch-tls
+      hosts:
+        - oxomine.oxon.ch

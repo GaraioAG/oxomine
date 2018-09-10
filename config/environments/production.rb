@@ -25,4 +25,10 @@ Rails.application.configure do
 
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
+
+  if ENV["RAILS_LOG_TO_STDOUT"].present?
+    logger = ActiveSupport::Logger.new(STDOUT)
+    logger.formatter = StackdriverLogFormatter.new
+    config.logger = ActiveSupport::TaggedLogging.new(logger)
+  end
 end

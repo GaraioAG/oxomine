@@ -1,0 +1,16 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  database: oxomine_development
+
+production:
+  <<: *default
+  database: <%= ENV.fetch("DATABASE_NAME", 'oxomine') %>
+  username: <%= ENV.fetch("DATABASE_USER", 'deploy') %>
+  password: <%= ENV.fetch("DATABASE_PASSWORD", 'password') %>
+  host: <%= ENV.fetch("DATABASE_HOST", 'localhost') %>
+  port: <%= ENV.fetch("DATABASE_PORT", 5432) %>

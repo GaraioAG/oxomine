@@ -1,0 +1,32 @@
+default:
+  email_delivery:
+    delivery_method: :smtp
+    smtp_settings:
+      enable_starttls_auto: true
+      address: "smtp.gmail.com"
+      port: 587
+      domain: "oxon.ch"
+      authentication: :plain
+      user_name: <%= ENV['SMTP_USERNAME'] %>
+      password: <%= ENV['SMTP_PASSWORD'] %>
+
+  attachments_storage_path:
+
+  autologin_cookie_name:
+  autologin_cookie_path:
+  autologin_cookie_secure:
+
+  scm_subversion_command:
+  scm_mercurial_command:
+  scm_git_command:
+  scm_cvs_command:
+  scm_bazaar_command:
+  scm_darcs_command:
+  scm_stderr_log_file:
+
+  database_cipher_key:
+  rmagick_font_path:
+
+production:
+
+development:

@@ -35,6 +35,12 @@ class ApplicationController < ActionController::Base
 
   protect_from_forgery
 
+  force_ssl unless: :http_allowed?
+
+  def http_allowed?
+    request.path =~ /healthz/ || Rails.env.development? || Rails.env.test?
+  end
+
   def verify_authenticity_token
     unless api_request?
       super

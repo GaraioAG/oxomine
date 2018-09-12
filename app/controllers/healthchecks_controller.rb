@@ -1,4 +1,6 @@
 class HealthchecksController < ApplicationController
+  skip_before_action :check_if_login_required
+
   def healthz
     # TODO: Add more checks!
 

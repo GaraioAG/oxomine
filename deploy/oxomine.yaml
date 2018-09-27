@@ -4,13 +4,10 @@ kind: Deployment
 metadata:
   name: oxomine
 spec:
-  replicas: 2
+  replicas: 1
   minReadySeconds: 5
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 1
+    type: Recreate
   selector:
     matchLabels:
       app: oxomine

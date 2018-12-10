@@ -15,7 +15,7 @@ spec:
               args:
                 - |
                   trap "touch /tmp/pod/main-terminated" EXIT
-                  sleep 10 &&
+                  sleep 5 &&
                   /usr/local/bundle/bin/rake redmine:attachments:prune
               env:
                 - name: RAILS_ENV
